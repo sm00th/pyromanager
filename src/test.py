@@ -26,6 +26,8 @@ class XMLdb_test( unittest.TestCase ):
         self.assertListEqual( db.searchByCRC( 0xB760405B ), [ 'Coropata', 4710, 0xB760405B ] )
         self.assertEqual( db.searchByCRC( 0xFFFFFFFF ), None )
         self.assertListEqual( db.searchByName( 'Coropata' ), [ 'Coropata', 4710, 0xB760405B ] )
+        self.assertListEqual( db.searchByReleaseNumber( 4710 ), [ 'Coropata', 4710, 0xB760405B ] )
+
 
     def testFileNameParser( self ):
         testNames = {

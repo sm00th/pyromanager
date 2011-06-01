@@ -37,6 +37,14 @@ def searchByCRC( gameList, crc32 ):
             return game
     return None
 
+def searchByReleaseNumber( gameList, releaseNumber ):
+    # TODO: same as crc32
+    for game in gameList:
+        if game[1] == releaseNumber:
+            return game
+    return None
+
+
 def searchByName( gameList, gameName ):
     for game in gameList:
         # TODO: Levenshtein distance is good enough, probably
@@ -72,6 +80,9 @@ class AdvansceneXML():
 
     def searchByName( self, name ):
         return searchByName( self.gameList, name )
+
+    def searchByReleaseNumber( self, releaseNumber ):
+        return searchByReleaseNumber( self.gameList, releaseNumber )
 
     def getCRC( self, gameNode ):
         for crc in gameNode.getElementsByTagName( 'romCRC' ):

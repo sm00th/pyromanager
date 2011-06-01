@@ -5,7 +5,12 @@ import binascii
 import pyNDSrom
 
 def byteToString( byteString ):
-    return byteString.decode( 'utf-8' ).rstrip( '\x00' )
+    string = ''
+    try:
+        string = byteString.decode( 'utf-8' ).rstrip( '\x00' )
+    except Exception as e:
+        print 'Failed to decode string: %s' % ( Exception )
+    return string
 
 def byteToInt( byteString ):
     return struct.unpack( 'i', byteString + ( '\x00' * ( 4 - len( byteString ) ) ) )[0]

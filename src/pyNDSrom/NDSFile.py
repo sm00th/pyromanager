@@ -9,7 +9,7 @@ def byteToString( byteString ):
     try:
         string = byteString.decode( 'utf-8' ).rstrip( '\x00' )
     except Exception as e:
-        print 'Failed to decode string: %s' % ( Exception )
+        print 'Failed to decode string: %s' % ( e )
     return string
 
 def byteToInt( byteString ):

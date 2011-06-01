@@ -1,5 +1,26 @@
 ''' Classes to import data from various xml databases '''
 from xml.dom import minidom
+import re
+
+def parseFileName( fileName ):
+    releaseNum = None
+
+    fileName = fileName.lower()
+    fileName = re.sub( "\.nds$", '', fileName )
+    fileName = re.sub( "_", ' ', fileName )
+
+    releaseNum_pattern = re.compile( r"(\[|\()?(\d+)(\]|\))?\s*-?(.*)" )
+    matchReleaseNum = releaseNum_pattern.match( fileName )
+    if matchReleaseNum:
+        releaseNum = int( matchReleaseNum.group( 2 ) )
+        fileName = matchReleaseNum.group( 4 )
+
+    fileName = re.sub( r"(\(|\[)[^\(\)\[\]]*(\)|\])", '', fileName )
+    fileName = re.sub( r"the", '', fileName )
+    fileName = re.sub( r"[^\w\d\s]", '', fileName )
+    fileName = re.sub( r"\s+", ' ', fileName )
+    fileName = fileName.strip()
+    return [ releaseNum, fileName ]
 
 def getText( nodeList ):
     rc = []

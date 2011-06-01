@@ -27,5 +27,18 @@ class XMLdb_test( unittest.TestCase ):
         self.assertEqual( db.searchByCRC( 0xFFFFFFFF ), None )
         self.assertListEqual( db.searchByName( 'Coropata' ), [ 'Coropata', 4710, 0xB760405B ] )
 
+    def testFileNameParser( self ):
+        testNames = {
+                     "0028 - Kirby - Canvas Curse (USA).NDS" : [ 28, "kirby canvas curse" ],
+                     "(3686) - Zubo (USA) (En,Fr,Es).nds" : [ 3686, "zubo" ],
+                     "[3686] Zubo.nds" : [ 3686, "zubo" ],
+                     "Shin Megami Tensei - Strange Journey.nds" : [ None, "shin megami tensei strange journey" ],
+                     "1514_The_Legend_of_Zelda_Phantom_Hourglass.nds" : [ 1514, "legend of zelda phantom hourglass" ],
+                     "9 Hours 9 Persons 9 Doors.nds" : [ 9, "hours 9 persons 9 doors" ],
+                     "3776 - Broken Sword - Shadow of the Templars - The Director's Cut (USA) (En,Fr,De,Es,It).nds" : [ 3776, "broken sword shadow of templars directors cut" ],
+        }
+        for( fileName, expectedResult ) in testNames.iteritems():
+            self.assertListEqual( pyNDSrom.parseFileName( fileName ), expectedResult )
+
 if __name__ == '__main__':
     unittest.main()

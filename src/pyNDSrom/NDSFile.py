@@ -68,13 +68,27 @@ class DirScanner:
             fullPath = path + "/" + fileName
             if os.path.isdir( fullPath ):
                 self.getGameList( fullPath )
+            # FIXME: ugly nesting
             else:
                 if re.search( "\.nds$", fullPath, flags = re.IGNORECASE ):
                     game = NDSFile( fullPath )
                     if game.isValid():
-                        gameInfo = self.db.searchByCRC( game.crc32 ) # TODO: add search by name 
+                        gameInfo = self.db.searchByCRC( game.crc32 )
                         if gameInfo:
                             gameInfo.insert( 0, fullPath )
                             gameList.append( gameInfo )
+                        else:
+                            ( releaseNumber, gameName ) = pyNDSrom.xmlDB.parseFileName( fullPath )
+                            gameInfo = self.db.searchByReleaseNumber( releaseNumber )
+                            if gameInfo:
+                                gameInfo.insert( 0, fullPath )
+                                gameList.append( gameInfo )
+                            else:
+                                gameInfo = self.db.searchByName( gameName )
+                                if gameInfo:
+                                    gameInfo.insert( 0, fullPath )
+                                    gameList.append( gameInfo )
+
+
 
         return gameList

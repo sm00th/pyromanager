@@ -5,6 +5,7 @@ import re
 def parseFileName( fileName ):
     releaseNum = None
 
+    fileName = re.sub( r"^.*/", '', fileName )
     fileName = fileName.lower()
     fileName = re.sub( "\.nds$", '', fileName )
     fileName = re.sub( "_", ' ', fileName )

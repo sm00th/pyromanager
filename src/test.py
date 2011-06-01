@@ -31,8 +31,8 @@ class XMLdb_test( unittest.TestCase ):
 
     def testFileNameParser( self ):
         testNames = {
-                     "0028 - Kirby - Canvas Curse (USA).NDS" : [ 28, "kirby canvas curse" ],
-                     "(3686) - Zubo (USA) (En,Fr,Es).nds" : [ 3686, "zubo" ],
+                     "games/0028 - Kirby - Canvas Curse (USA).NDS" : [ 28, "kirby canvas curse" ],
+                     "../more/depth/(3686) - Zubo (USA) (En,Fr,Es).nds" : [ 3686, "zubo" ],
                      "[3686] Zubo.nds" : [ 3686, "zubo" ],
                      "Shin Megami Tensei - Strange Journey.nds" : [ None, "shin megami tensei strange journey" ],
                      "1514_The_Legend_of_Zelda_Phantom_Hourglass.nds" : [ 1514, "legend of zelda phantom hourglass" ],

@@ -1,5 +1,7 @@
+import os
 import struct
 import binascii
+import pyNDSrom
 
 def byteToString( byteString ):
     return byteString.decode( 'utf-8' ).rstrip( '\x00' )
@@ -21,6 +23,7 @@ class NDSFile:
         self.encryption = None
         self.capacity = None
         self.crc32 = None
+        self.parseFile()
 
     def parseFile( self ):
         try:
@@ -42,8 +45,23 @@ class NDSFile:
             raise Exception( 'Failed to parse file' )
 
 class DirScanner:
-    def __init__( self, path ):
-        self.dirPath = path
+    def __init__( self, dbPath ):
+        self.db = pyNDSrom.xmlDB.AdvansceneXML( dbPath )
+        import pprint
+        pprint.pprint( self.db )
 
-    def getGameList( self ):
-        pass
+    def getGameList( self, path ):
+        gameList = []
+        dirList = os.listdir( path )
+        for fileName in dirList:
+            fullPath = path + "/" + fileName
+            if os.path.isdir( fullPath ):
+                self.getGameList( fullPath )
+            else:
+                game = NDSFile( fullPath )
+                gameInfo = self.db.searchByCRC( game.crc32 ) # TODO: add search by name 
+                if gameInfo:
+                    gameInfo.insert( 0, fullPath )
+                    gameList.append( gameInfo )
+
+        return gameList

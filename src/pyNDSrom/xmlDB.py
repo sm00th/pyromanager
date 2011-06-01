@@ -14,7 +14,7 @@ def searchByCRC( gameList, crc32 ):
     for game in gameList:
         if game[2] == crc32:
             return game
-    return 0
+    return None
 
 def searchByName( gameList, gameName ):
     for game in gameList:
@@ -23,12 +23,14 @@ def searchByName( gameList, gameName ):
         # and regioncode in filename    
         if game[0] == gameName:
             return game
-    return 0
+    return None
 
 class AdvansceneXML():
     def __init__( self, filePath ):
         self.filePath = filePath
         self.gameList = []
+
+        self.parseFile()
 
     def parseFile( self ):
         try:
@@ -44,10 +46,16 @@ class AdvansceneXML():
         crc32 = self.getCRC( gameNode )
         return [ title, relNum, crc32 ]
 
+    def searchByCRC( self, crc32 ):
+        return searchByCRC( self.gameList, crc32 )
+
+    def searchByName( self, name ):
+        return searchByName( self.gameList, name )
+
     def getCRC( self, gameNode ):
         for crc in gameNode.getElementsByTagName( 'romCRC' ):
             if crc.getAttribute( 'extension' ) != '.nds':
                 continue
             else:
                 return int( getText( crc.childNodes ), 16 )
-        return 0
+        return None

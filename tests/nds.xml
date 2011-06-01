@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<dat xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="datas.xsd">
+	<configuration>
+		<datName>ADVANsCEne Nintendo DS Collection</datName>
+		<datVersion>1683</datVersion>
+		<system>Nintendo DS</system>
+		<screenshotsWidth>256</screenshotsWidth>
+		<screenshotsHeight>384</screenshotsHeight>
+		<infos>
+			<title visible="false" inNamingOption="true" default="false"/>
+			<location visible="true" inNamingOption="true" default="true"/>
+			<publisher visible="true" inNamingOption="true" default="true"/>
+			<sourceRom visible="true" inNamingOption="true" default="true"/>
+			<saveType visible="true" inNamingOption="true" default="true"/>
+			<romSize visible="true" inNamingOption="true" default="true"/>
+			<releaseNumber visible="true" inNamingOption="true" default="false"/>
+			<languageNumber visible="true" inNamingOption="true" default="false"/>
+			<comment visible="true" inNamingOption="true" default="false"/>
+			<romCRC visible="true" inNamingOption="true" default="true"/>
+			<im1CRC visible="true" inNamingOption="false" default="false"/>
+			<im2CRC visible="true" inNamingOption="false" default="false"/>
+			<languages visible="true" inNamingOption="true" default="true"/>
+		</infos>
+		<canOpen>
+			<extension>.nds</extension>
+			<extension>.neo</extension>
+			<extension>.ids</extension>
+                        <extension>.dsi</extension>
+		</canOpen>
+		<newDat>
+ 			<datVersionURL>http://www.advanscene.com/offline/version/ADVANsCEne_NDS.txt</datVersionURL>
+			<datURL fileName="ADVANsCEne_NDS.zip">http://www.advanscene.com/offline/datas/ADVANsCEne_NDS.zip</datURL>
+			<imURL>http://www.retrocovers.com/offline/imgs/ADVANsCEne_NDS/</imURL>
+		</newDat>
+		<search>
+			<to value="location" default="true" auto="true"/>
+			<to value="romSize" default="true" auto="false">
+                                <find operation="=" value="1048576">8Mbits</find>
+                                <find operation="=" value="2097152">16Mbits</find>
+                                <find operation="=" value="4194304">32Mbits</find>
+				<find operation="=" value="8388608">64Mbits</find>
+				<find operation="=" value="16777216">128Mbits</find>
+				<find operation="=" value="33554432">256Mbits</find>
+				<find operation="=" value="67108864">512Mbits</find>
+				<find operation="=" value="134217728">1024Mbits</find>
+                                <find operation="=" value="268435456">2048Mbits</find>
+                                <find operation="=" value="536870912">4096Mbits</find>
+			</to>
+			<to value="languages" default="true" auto="true"/>
+			<to value="saveType" default="true" auto="false">
+				<find operation="inNoCase" value="EEPROM - 4 kbit">Eeprom - 4 kbit</find>
+				<find operation="inNoCase" value="EEPROM - 64 kbit">Eeprom - 64 kbit</find>
+				<find operation="inNoCase" value="EEPROM - 512 kbit">Eeprom - 512 kbit</find>
+				<find operation="inNoCase" value="FLASH - 2 mbit">Flash - 2 mbit</find>
+				<find operation="inNoCase" value="FLASH - 4 mbit">Flash - 4 mbit</find>
+                                <find operation="inNoCase" value="FLASH - 8 mbit">Flash - 8 mbit</find>
+                                <find operation="inNoCase" value="FLASH - 64 mbit">Flash - 64 mbit</find>
+				<find operation="inNoCase" value="NONE">None</find>
+				<find operation="inNoCase" value="TBC">TBC</find>
+
+			</to>
+			<to value="publisher" default="true" auto="true"/>
+			<to value="sourceRom" default="true" auto="true"/>
+		</search>
+		<romTitle>%e %n %o%m</romTitle>
+	</configuration>
+	<games>
+		<game>
+			<imageNumber>4710</imageNumber>
+			<releaseNumber>4710</releaseNumber>
+			<title>Coropata</title>
+			<saveType>Eeprom - 4 kbit</saveType>
+			<romSize>16777216</romSize>
+			<publisher>LukPlus</publisher>
+			<location>7</location>
+			<sourceRom>BAHAMUT</sourceRom>
+			<language>256</language>
+			<files>
+				<romCRC extension=".nds">B760405B</romCRC>
+			</files>
+			<im1CRC>724FF7E3</im1CRC>
+			<im2CRC>661A73E1</im2CRC>
+			<comment>4606</comment>
+			<duplicateID>0</duplicateID>
+		</game>
+		<game>
+			<imageNumber>4762</imageNumber>
+			<releaseNumber>4762</releaseNumber>
+			<title>Last Window - Mayonaka no Yakusoku</title>
+			<saveType>Flash - 2 Mbit</saveType>
+			<romSize>134217728</romSize>
+			<publisher>Nintendo</publisher>
+			<location>7</location>
+			<sourceRom>STORM</sourceRom>
+			<language>256</language>
+			<files>
+				<romCRC extension=".nds">0C4EBCF0</romCRC>
+			</files>
+			<im1CRC>76FB573A</im1CRC>
+			<im2CRC>6F481648</im2CRC>
+			<comment>4654</comment>
+			<duplicateID>1280</duplicateID>
+		</game>
+		<game>
+			<imageNumber>4770</imageNumber>
+			<releaseNumber>4770</releaseNumber>
+			<title>Jig A Pix - Pets (DSi Enhanced)</title>
+			<saveType>Eeprom - 4 kbit</saveType>
+			<romSize>33554432</romSize>
+			<publisher>Zushi Games</publisher>
+			<location>0</location>
+			<sourceRom>Zusammen</sourceRom>
+			<language>4307</language>
+			<files>
+				<romCRC extension=".nds">70AFC3F8</romCRC>
+			</files>
+			<im1CRC>18AD266F</im1CRC>
+			<im2CRC>B7835295</im2CRC>
+			<comment>4661</comment>
+			<duplicateID>0</duplicateID>
+		</game>
+		<game>
+			<imageNumber>5911</imageNumber>
+			<releaseNumber>5911</releaseNumber>
+			<title>Pokemon - White Version (DSi Enhanced)</title>
+			<saveType>Flash - 4 Mbit</saveType>
+			<romSize>268435456</romSize>
+			<publisher>Nintendo</publisher>
+			<location>22</location>
+			<sourceRom>Independent</sourceRom>
+			<language>65536</language>
+			<files>
+				<romCRC extension=".nds">B699052A</romCRC>
+			</files>
+			<im1CRC>A1C1F6A3</im1CRC>
+			<im2CRC>F358C323</im2CRC>
+			<comment>5682</comment>
+			<duplicateID>1384</duplicateID>
+		</game>
+		<game>
+			<imageNumber>5912</imageNumber>
+			<releaseNumber>5912</releaseNumber>
+			<title>Pokemon - Black Version (DSi Enhanced)</title>
+			<saveType>Flash - 4 Mbit</saveType>
+			<romSize>268435456</romSize>
+			<publisher>Nintendo</publisher>
+			<location>22</location>
+			<sourceRom>Independent</sourceRom>
+			<language>65536</language>
+			<files>
+				<romCRC extension=".nds">436C1606</romCRC>
+			</files>
+			<im1CRC>D94523AD</im1CRC>
+			<im2CRC>2039A30E</im2CRC>
+			<comment>5683</comment>
+			<duplicateID>1385</duplicateID>
+		</game>
+		<game>
+			<imageNumber>5913</imageNumber>
+			<releaseNumber>5913</releaseNumber>
+			<title>Thor - God of Thunder</title>
+			<saveType>Eeprom - 4 kbit</saveType>
+			<romSize>33554432</romSize>
+			<publisher>SEGA</publisher>
+			<location>1</location>
+			<sourceRom>Independent</sourceRom>
+			<language>4291</language>
+			<files>
+				<romCRC extension=".nds">1D8E8CF7</romCRC>
+			</files>
+			<im1CRC>C04BDB40</im1CRC>
+			<im2CRC>8229549C</im2CRC>
+			<comment>5684</comment>
+			<duplicateID>0</duplicateID>
+		</game>
+		<game>
+			<imageNumber>999999</imageNumber>
+			<releaseNumber>999999</releaseNumber>
+			<title>TinyFB</title>
+			<saveType>Eeprom - 4 kbit</saveType>
+			<romSize>33554432</romSize>
+			<publisher>SEGA</publisher>
+			<location>1</location>
+			<sourceRom>Independent</sourceRom>
+			<language>4291</language>
+			<files>
+				<romCRC extension=".nds">1ECE1D01</romCRC>
+			</files>
+			<im1CRC>C04BDB40</im1CRC>
+			<im2CRC>8229549C</im2CRC>
+			<comment>999999</comment>
+			<duplicateID>0</duplicateID>
+		</game>
+		
+	</games>
+	<gui>
+		<images width="478" height="386">
+			<image x="0" y="0" width="214" height="384"/>
+			<image x="220" y="0" width="256" height="384"/>
+		</images>
+	</gui>
+</dat>

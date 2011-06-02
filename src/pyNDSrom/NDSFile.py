@@ -67,7 +67,7 @@ class DirScanner:
         for fileName in dirList:
             fullPath = path + "/" + fileName
             if os.path.isdir( fullPath ):
-                self.getGameList( fullPath )
+                gameList += self.getGameList( fullPath )
             # FIXME: ugly nesting
             else:
                 if re.search( "\.nds$", fullPath, flags = re.IGNORECASE ):
@@ -88,7 +88,5 @@ class DirScanner:
                                 if gameInfo:
                                     gameInfo.insert( 0, fullPath )
                                     gameList.append( gameInfo )
-
-
 
         return gameList

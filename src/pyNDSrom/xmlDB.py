@@ -2,6 +2,15 @@
 from xml.dom import minidom
 import re
 
+def stripGameName( gameName ):
+    gameName = re.sub( r"(\(|\[)[^\(\)\[\]]*(\)|\])", '', gameName )
+    gameName = re.sub( r"the", '', gameName )
+    gameName = re.sub( r"[^\w\d\s]", '', gameName )
+    gameName = re.sub( r"\s+", ' ', gameName )
+    gameName = gameName.strip()
+
+    return gameName
+
 def parseFileName( fileName ):
     releaseNum = None
 
@@ -16,11 +25,8 @@ def parseFileName( fileName ):
         releaseNum = int( matchReleaseNum.group( 2 ) )
         fileName = matchReleaseNum.group( 4 )
 
-    fileName = re.sub( r"(\(|\[)[^\(\)\[\]]*(\)|\])", '', fileName )
-    fileName = re.sub( r"the", '', fileName )
-    fileName = re.sub( r"[^\w\d\s]", '', fileName )
-    fileName = re.sub( r"\s+", ' ', fileName )
-    fileName = fileName.strip()
+    fileName = stripGameName( fileName )
+
     return [ releaseNum, fileName ]
 
 def getText( nodeList ):
@@ -51,7 +57,7 @@ def searchByName( gameList, gameName ):
         # TODO: Levenshtein distance is good enough, probably
         # also something to strip or process non-name info like release number
         # and regioncode in filename    
-        if game[0] == gameName:
+        if re.search( gameName, stripGameName( game[0] ), re.IGNORECASE ):
             return game
     return None
 
@@ -83,6 +89,7 @@ class AdvansceneXML():
         return searchByName( self.gameList, name )
 
     def searchByReleaseNumber( self, releaseNumber ):
+        # TODO: check if the names are relatively the same or let the user choose if found release is ok
         return searchByReleaseNumber( self.gameList, releaseNumber )
 
     def getCRC( self, gameNode ):

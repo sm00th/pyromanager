@@ -97,8 +97,6 @@ class DirScanner:
                             if re.search( "\.nds$", archiveFile, flags = re.IGNORECASE ):
                                 zipFile.extract( archiveFile, '/tmp/' )
                                 gameInfo = self.processNDSFile( '/tmp/' + archiveFile )
-                                import pprint
-                                pprint.pprint( gameList )
 
                                 if gameInfo:
                                     gameInfo = [ fullPath + ":" + archiveFile ] + gameInfo

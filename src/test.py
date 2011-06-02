@@ -15,7 +15,10 @@ class NDSFile_test( unittest.TestCase ):
 
     def testScanDir( self ):
         scanner = pyNDSrom.DirScanner( '../tests/nds.xml' )
-        self.assertListEqual( scanner.getGameList( '../tests' ), [ ['../tests/TinyFB.nds', 'TinyFB', 999999, 0x1ece1d01] ] )
+        self.assertListEqual( scanner.getGameList( '../tests' ), [
+                                                                  ['../tests/TinyFB.nds', 'TinyFB', 999999, 0x1ece1d01],
+                                                                  ['../tests/TinyFB.zip:TinyFB.nds', 'TinyFB', 999999, 0x1ece1d01]
+                                                                  ] )
 
 class XMLdb_test( unittest.TestCase ):
     def testParse( self ):
@@ -27,7 +30,6 @@ class XMLdb_test( unittest.TestCase ):
         self.assertEqual( db.searchByCRC( 0xFFFFFFFF ), None )
         self.assertListEqual( db.searchByName( 'Coropata' ), [ 'Coropata', 4710, 0xB760405B ] )
         self.assertListEqual( db.searchByReleaseNumber( 4710 ), [ 'Coropata', 4710, 0xB760405B ] )
-
 
     def testFileNameParser( self ):
         testNames = {

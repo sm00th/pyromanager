@@ -3,6 +3,7 @@ import re
 import struct
 import binascii
 import pyNDSrom
+import zipfile
 
 def byteToString( byteString ):
     string = ''
@@ -61,6 +62,19 @@ class DirScanner:
     def __init__( self, dbPath ):
         self.db = pyNDSrom.xmlDB.AdvansceneXML( dbPath )
 
+    def processNDSFile( self, ndsPath ):
+        gameInfo = []
+        game = NDSFile( ndsPath )
+        if game.isValid():
+            gameInfo = self.db.searchByCRC( game.crc32 )
+            if not gameInfo:
+                ( releaseNumber, gameName ) = pyNDSrom.xmlDB.parseFileName( ndsPath )
+                gameInfo = self.db.searchByReleaseNumber( releaseNumber )
+                if not gameInfo:
+                    gameInfo = self.db.searchByName( gameName )
+
+        return gameInfo
+
     def getGameList( self, path ):
         gameList = []
         dirList = os.listdir( path )
@@ -70,23 +84,28 @@ class DirScanner:
                 gameList += self.getGameList( fullPath )
             # FIXME: ugly nesting
             else:
+                gameInfo = None
                 if re.search( "\.nds$", fullPath, flags = re.IGNORECASE ):
-                    game = NDSFile( fullPath )
-                    if game.isValid():
-                        gameInfo = self.db.searchByCRC( game.crc32 )
-                        if gameInfo:
-                            gameInfo.insert( 0, fullPath )
-                            gameList.append( gameInfo )
-                        else:
-                            ( releaseNumber, gameName ) = pyNDSrom.xmlDB.parseFileName( fullPath )
-                            gameInfo = self.db.searchByReleaseNumber( releaseNumber )
-                            if gameInfo:
-                                gameInfo.insert( 0, fullPath )
-                                gameList.append( gameInfo )
-                            else:
-                                gameInfo = self.db.searchByName( gameName )
+                    gameInfo = self.processNDSFile( fullPath )
+                    if gameInfo:
+                        gameInfo = [ fullPath ] + gameInfo
+                        gameList.append( gameInfo )
+                elif re.search( "\.zip$", fullPath, flags = re.IGNORECASE ):
+                    try:
+                        zipFile = zipfile.ZipFile( fullPath, "r" )
+                        for archiveFile in zipFile.namelist():
+                            if re.search( "\.nds$", archiveFile, flags = re.IGNORECASE ):
+                                zipFile.extract( archiveFile, '/tmp/' )
+                                gameInfo = self.processNDSFile( '/tmp/' + archiveFile )
+                                import pprint
+                                pprint.pprint( gameList )
+
                                 if gameInfo:
-                                    gameInfo.insert( 0, fullPath )
+                                    gameInfo = [ fullPath + ":" + archiveFile ] + gameInfo
                                     gameList.append( gameInfo )
+                                os.unlink( '/tmp/' + archiveFile )
+                        zipFile.close()
+                    except Exception as e:
+                        print "Failed parsing zip-archive: %s" % ( e )
 
         return gameList

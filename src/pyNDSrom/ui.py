@@ -5,6 +5,8 @@ class cli( cmdln.Cmdln ):
     @cmdln.alias( "i", "im" )
     @cmdln.option( "-s", "--no-subdirs", action = "store_true",
                   help = "do not scan subdirs" )
+    @cmdln.option( "-n", "--non-interactive", action = "store_true",
+                   help = "do not ask any questions(probably a bad idea)" )
     def do_import( self, subcmd, opts, path ):
         """${cmd_name}: import roms from dir into database
         

@@ -13,12 +13,6 @@ class NDSFile_test( unittest.TestCase ):
         self.assertEqual( testFile.capacity, 16 )
         self.assertEqual( testFile.crc32, 0x1ece1d01 )
 
-    def testScanDir( self ):
-        scanner = pyNDSrom.DirScanner( '../tests/sql' )
-        self.assertListEqual( scanner.getGameList( '../tests' ), [
-                                                                  ( '../tests/TinyFB.nds', 999999 ),
-                                                                  ( '../tests/TinyFB.zip:TinyFB.nds', 999999 )
-                                                                  ] )
 
 class db_test( unittest.TestCase ):
     def testParse( self ):
@@ -46,7 +40,7 @@ class db_test( unittest.TestCase ):
             self.assertListEqual( pyNDSrom.parseFileName( fileName ), expectedResult )
 
     def testSQLImport( self ):
-        db = pyNDSrom.SQLdb( '../tests/sql' )
+        db    = pyNDSrom.SQLdb( '../tests/sql' )
         xmlDB = pyNDSrom.AdvansceneXML( '../tests/nds.xml' )
         db.importKnownFrom( xmlDB )
 

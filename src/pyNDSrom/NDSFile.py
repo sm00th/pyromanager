@@ -44,12 +44,12 @@ class NDSFile:
             nds = open( self.filePath, 'rb' )
 
             nds.seek( 0 )
-            self.gameTitle = byteToString( nds.read( 12 ) )
-            self.gameCode = byteToString( nds.read( 4 ) )
-            self.makerCode = byteToString( nds.read( 2 ) )
-            self.unitCode = byteToInt( nds.read( 1 ) )
+            self.gameTitle  = byteToString( nds.read( 12 ) )
+            self.gameCode   = byteToString( nds.read( 4 ) )
+            self.makerCode  = byteToString( nds.read( 2 ) )
+            self.unitCode   = byteToInt( nds.read( 1 ) )
             self.encryption = byteToInt( nds.read( 1 ) )
-            self.capacity = capsize( byteToInt( nds.read( 2 ) ) )
+            self.capacity   = capsize( byteToInt( nds.read( 2 ) ) )
 
             nds.seek( 0 )
             self.crc32 = binascii.crc32( nds.read() ) & 0xFFFFFFFF
@@ -60,7 +60,6 @@ class NDSFile:
 
 class DirScanner:
     def __init__( self, dbPath ):
-        #self.db = pyNDSrom.db.AdvansceneXML( dbPath )
         self.db = pyNDSrom.db.SQLdb( dbPath )
 
     def processNDSFile( self, ndsPath ):
@@ -78,41 +77,7 @@ class DirScanner:
 
         return gameInfo
 
-    def getGameList( self, path ):
-        gameList = []
-        dirList = os.listdir( path )
-        for fileName in dirList:
-            fullPath = path + "/" + fileName
-            if os.path.isdir( fullPath ):
-                gameList += self.getGameList( fullPath )
-            # FIXME: ugly nesting
-            else:
-                gameInfo = None
-                if re.search( "\.nds$", fullPath, flags = re.IGNORECASE ):
-                    gameInfo = self.processNDSFile( fullPath )
-                    if gameInfo:
-                        gameInfo = ( fullPath, gameInfo )
-                        gameList.append( gameInfo )
-                elif re.search( "\.zip$", fullPath, flags = re.IGNORECASE ):
-                    try:
-                        zipFile = zipfile.ZipFile( fullPath, "r" )
-                        for archiveFile in zipFile.namelist():
-                            if re.search( "\.nds$", archiveFile, flags = re.IGNORECASE ):
-                                # TODO: maybe we can use zipfile.read instead of actually unzipping stuff
-                                zipFile.extract( archiveFile, '/tmp/' )
-                                gameInfo = self.processNDSFile( '/tmp/' + archiveFile )
-
-                                if gameInfo:
-                                    gameInfo = ( fullPath + ":" + archiveFile, gameInfo )
-                                    gameList.append( gameInfo )
-                                os.unlink( '/tmp/' + archiveFile )
-                        zipFile.close()
-                    except Exception as e:
-                        print "Failed parsing zip-archive %s: %s" % ( fullPath, e )
-
-        return gameList
-
-    def scanIntoDB( self, path ):
+    def scanIntoDB( self, path, interactive = 0 ):
         dirList = os.listdir( path )
         for fileName in dirList:
             fullPath = path + "/" + fileName
@@ -131,6 +96,7 @@ class DirScanner:
                         for archiveFile in zipFile.namelist():
                             if re.search( "\.nds$", archiveFile, flags = re.IGNORECASE ):
                                 # TODO: maybe we can use zipfile.read instead of actually unzipping stuff
+                                # NB: hardcoding /tmp/ is probably an awfull idea
                                 zipFile.extract( archiveFile, '/tmp/' )
                                 gameInfo = self.processNDSFile( '/tmp/' + archiveFile )
 

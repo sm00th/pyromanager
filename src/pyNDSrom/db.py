@@ -157,12 +157,11 @@ class AdvansceneXML():
         return self.gameList
 
     def parseGame( self, gameNode ):
-        title = getText( gameNode.getElementsByTagName( 'title' )[0].childNodes )
-        publisher = getText( gameNode.getElementsByTagName( 'publisher' )[0].childNodes )
+        title      = getText( gameNode.getElementsByTagName( 'title' )[0].childNodes )
+        publisher  = getText( gameNode.getElementsByTagName( 'publisher' )[0].childNodes )
         releasedBy = getText( gameNode.getElementsByTagName( 'sourceRom' )[0].childNodes )
-        relNum = int( getText( gameNode.getElementsByTagName( 'releaseNumber' )[0].childNodes ) )
-        crc32 = self.getCRC( gameNode )
-        #return [ title, relNum, crc32 ]
+        relNum     = int( getText( gameNode.getElementsByTagName( 'releaseNumber' )[0].childNodes ) )
+        crc32      = self.getCRC( gameNode )
         return ( relNum, title, crc32, publisher, releasedBy )
 
     def searchByCRC( self, crc32 ):

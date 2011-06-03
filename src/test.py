@@ -14,10 +14,10 @@ class NDSFile_test( unittest.TestCase ):
         self.assertEqual( testFile.crc32, 0x1ece1d01 )
 
     def testScanDir( self ):
-        scanner = pyNDSrom.DirScanner( '../tests/nds.xml' )
+        scanner = pyNDSrom.DirScanner( '../tests/sql' )
         self.assertListEqual( scanner.getGameList( '../tests' ), [
-                                                                  ['../tests/TinyFB.nds', 999999, 'TinyFB', 0x1ece1d01],
-                                                                  ['../tests/TinyFB.zip:TinyFB.nds', 999999, 'TinyFB', 0x1ece1d01]
+                                                                  ( '../tests/TinyFB.nds', 999999 ),
+                                                                  ( '../tests/TinyFB.zip:TinyFB.nds', 999999 )
                                                                   ] )
 
 class db_test( unittest.TestCase ):

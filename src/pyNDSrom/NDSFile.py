@@ -60,7 +60,8 @@ class NDSFile:
 
 class DirScanner:
     def __init__( self, dbPath ):
-        self.db = pyNDSrom.db.AdvansceneXML( dbPath )
+        #self.db = pyNDSrom.db.AdvansceneXML( dbPath )
+        self.db = pyNDSrom.db.SQLdb( dbPath )
 
     def processNDSFile( self, ndsPath ):
         gameInfo = []
@@ -88,7 +89,7 @@ class DirScanner:
                 if re.search( "\.nds$", fullPath, flags = re.IGNORECASE ):
                     gameInfo = self.processNDSFile( fullPath )
                     if gameInfo:
-                        gameInfo = [ fullPath ] + gameInfo
+                        gameInfo = ( fullPath, gameInfo )
                         gameList.append( gameInfo )
                 elif re.search( "\.zip$", fullPath, flags = re.IGNORECASE ):
                     try:
@@ -99,7 +100,7 @@ class DirScanner:
                                 gameInfo = self.processNDSFile( '/tmp/' + archiveFile )
 
                                 if gameInfo:
-                                    gameInfo = [ fullPath + ":" + archiveFile ] + gameInfo
+                                    gameInfo = ( fullPath + ":" + archiveFile, gameInfo )
                                     gameList.append( gameInfo )
                                 os.unlink( '/tmp/' + archiveFile )
                         zipFile.close()

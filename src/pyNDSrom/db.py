@@ -87,6 +87,38 @@ class SQLdb():
         self.db.commit()
         cursor.close()
 
+    def searchByCRC( self, crc32 ):
+        releaseNumber = None
+        try:
+            cursor = self.db.cursor()
+            releaseNumber = cursor.execute( 'select release_id from known_roms where crc32=?', ( crc32, ) ).fetchone()[0]
+        except Exception as e:
+            print "Failed to query db by crc32: %s" % e
+
+        cursor.close()
+        return releaseNumber
+
+    def searchByReleaseNumber( self, relNum ):
+        releaseNumber = None
+        try:
+            cursor = self.db.cursor()
+            releaseNumber = cursor.execute( 'select release_id from known_roms where release_id=?', ( relNum, ) ).fetchone()[0]
+        except Exception as e:
+            print "Failed to query db by release number: %s" % e
+
+        cursor.close()
+        return releaseNumber
+
+    def searchByName( self, name ):
+        releaseNumber = None
+        try:
+            cursor = self.db.cursor()
+            releaseNumber = cursor.execute( 'select release_id from known_roms where name like ?', ( name, ) ).fetchone()[0]
+        except Exception as e:
+            print "Failed to query db by release number: %s" % e
+
+        cursor.close()
+        return releaseNumber
 
 class AdvansceneXML():
     def __init__( self, filePath ):

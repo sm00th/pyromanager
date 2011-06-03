@@ -80,51 +80,63 @@ class SQLdb():
     def importKnownFrom( self, provider ):
         self._createTables()
 
-        cursor = self.db.cursor()
-        dataList = provider.getDBData()
-        for dataSet in dataList:
-            cursor.execute( 'INSERT OR REPLACE INTO known_roms VALUES(?,?,?,?,?)', dataSet )
-        self.db.commit()
-        cursor.close()
+        try:
+            cursor = self.db.cursor()
+            dataList = provider.getDBData()
+            for dataSet in dataList:
+                cursor.execute( 'INSERT OR REPLACE INTO known_roms VALUES(?,?,?,?,?)', dataSet )
+            self.db.commit()
+            cursor.close()
+        except Exception as e:
+            print "Failed to import from xml: %s" % e
+        return 1
 
     def searchByCRC( self, crc32 ):
         releaseNumber = None
         try:
             cursor = self.db.cursor()
-            retVal = cursor.execute( 'select release_id from known_roms where crc32=?', ( crc32, ) ).fetchone()
+            retVal = cursor.execute( 'SELECT release_id FROM known_roms WHERE crc32=?', ( crc32, ) ).fetchone()
             if retVal:
                 releaseNumber = retVal[0]
+            cursor.close()
         except Exception as e:
             print "Failed to query db by crc32: %s" % e
 
-        cursor.close()
         return releaseNumber
 
     def searchByReleaseNumber( self, relNum ):
         releaseNumber = None
         try:
             cursor = self.db.cursor()
-            retVal = cursor.execute( 'select release_id from known_roms where release_id=?', ( relNum, ) ).fetchone()
+            retVal = cursor.execute( 'SELECT release_id FROM known_roms WHERE release_id=?', ( relNum, ) ).fetchone()
             if retVal:
                 releaseNumber = retVal[0]
+            cursor.close()
         except Exception as e:
             print "Failed to query db by release number: %s" % e
 
-        cursor.close()
         return releaseNumber
 
     def searchByName( self, name ):
         releaseNumber = None
         try:
             cursor = self.db.cursor()
-            retVal = cursor.execute( 'select release_id from known_roms where name like ?', ( name, ) ).fetchone()
+            retVal = cursor.execute( 'SELECT release_id FROM known_roms WHERE name LIKE ?', ( name, ) ).fetchone()
             if retVal:
                 releaseNumber = retVal[0]
+            cursor.close()
         except Exception as e:
             print "Failed to query db by release number: %s" % e
 
-        cursor.close()
         return releaseNumber
+
+    def addLocalRom( self, filePath, releaseNumber ):
+        try:
+            cursor = self.db.cursor()
+            cursor.execute( 'INSERT OR REPLACE INTO local_roms ( release_id, path_to_file ) values ( ?, ? )', ( releaseNumber, filePath ) )
+            self.db.commit()
+        except Exception as e:
+            print "Failed to add (%s,%s) to local roms: %s" % ( filePath, releaseNumber, e )
 
 class AdvansceneXML():
     def __init__( self, filePath ):

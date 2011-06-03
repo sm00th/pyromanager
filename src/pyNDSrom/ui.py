@@ -29,8 +29,6 @@ def question_yn( question, default="y" ):
         print "Unexpected input"
         return question_yn( question, default )
 
-    import pprint
-    pprint.pprint( choices )
     return choices[reply][1]
 
 class cli( cmdln.Cmdln ):

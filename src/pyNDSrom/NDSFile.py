@@ -64,7 +64,7 @@ class DirScanner:
 
     def qustionableFile( self, dbRelNum, ndsPath ):
         gameInfo = self.db.getGameInfo( dbRelNum )
-        print "File %s was identified as %d - %s" % (
+        print "File '%s' was identified as %d - %s" % (
                 re.sub( r"^.*(/|:)", '', ndsPath ),
                 gameInfo[0],
                 gameInfo[1]

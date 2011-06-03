@@ -78,13 +78,16 @@ class DirScanner:
             dbRelNum = self.db.searchByCRC( game.crc32 )
             if not dbRelNum:
                 ( releaseNumber, gameName ) = pyNDSrom.db.parseFileName( ndsPath )
-                foundRelNum = self.db.searchByReleaseNumber( releaseNumber )
-                if foundRelNum and self.qustionableFile( foundRelNum, ndsPath ):
-                    dbRelNum = foundRelNum
+                foundByRelNum = self.db.searchByReleaseNumber( releaseNumber )
+                foundByName   = self.db.searchByName( gameName )
+                if foundByRelNum == foundByName:
+                    dbRelNum = foundByRelNum
                 else:
-                    foundRelNum = self.db.searchByName( gameName )
-                    if foundRelNum and self.qustionableFile( foundRelNum, ndsPath ):
-                        dbRelNum = foundRelNum
+                    if foundByRelNum and self.qustionableFile( foundByRelNum, ndsPath ):
+                        dbRelNum = foundByRelNum
+                    else:
+                        if foundByName and self.qustionableFile( foundByName, ndsPath ):
+                            dbRelNum = foundByName
         else:
             dbRelNum = 0
 

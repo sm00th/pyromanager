@@ -53,7 +53,6 @@ class cli( cmdln.Cmdln ):
         scanner = pyNDSrom.DirScanner( "%s/%s" % ( config['confDir'],
             config['dbFile'] ) )
         scanner.scanIntoDB( path )
-        print "scanning %s(not really yet)" % path
         print "subcmd: %s, opts: %s" % ( subcmd, opts )
 
     @cmdln.alias( "l", "ls" )

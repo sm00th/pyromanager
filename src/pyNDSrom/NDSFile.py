@@ -62,22 +62,35 @@ class DirScanner:
     def __init__( self, dbPath ):
         self.db = pyNDSrom.db.SQLdb( dbPath )
 
-    def processNDSFile( self, ndsPath ):
-        gameInfo = None
+    def qustionableFile( self, dbRelNum, ndsPath ):
+        gameInfo = self.db.getGameInfo( dbRelNum )
+        print "File %s was identified as %d - %s" % (
+                re.sub( r"^.*(/|:)", '', ndsPath ),
+                gameInfo[0],
+                gameInfo[1]
+            )
+        return pyNDSrom.ui.question_yn( "Is this correct?" )
+
+    def processNDSFile( self, ndsPath, interactive=1 ):
+        dbRelNum = None
         game = NDSFile( ndsPath )
         if game.isValid():
-            gameInfo = self.db.searchByCRC( game.crc32 )
-            if not gameInfo:
+            dbRelNum = self.db.searchByCRC( game.crc32 )
+            if not dbRelNum:
                 ( releaseNumber, gameName ) = pyNDSrom.db.parseFileName( ndsPath )
-                gameInfo = self.db.searchByReleaseNumber( releaseNumber )
-                if not gameInfo:
-                    gameInfo = self.db.searchByName( gameName )
+                foundRelNum = self.db.searchByReleaseNumber( releaseNumber )
+                if foundRelNum and self.qustionableFile( foundRelNum, ndsPath ):
+                    dbRelNum = foundRelNum
+                else:
+                    foundRelNum = self.db.searchByName( gameName )
+                    if foundRelNum and self.qustionableFile( foundRelNum, ndsPath ):
+                        dbRelNum = foundRelNum
         else:
-            gameInfo = 0
+            dbRelNum = 0
 
-        return gameInfo
+        return dbRelNum
 
-    def scanIntoDB( self, path, quiet=0, interactive=0 ):
+    def scanIntoDB( self, path, quiet=0, interactive=1 ):
         dirList = os.listdir( path )
         for fileName in dirList:
             fullPath = path + "/" + fileName
@@ -87,7 +100,7 @@ class DirScanner:
             else:
                 gameInfo = None
                 if re.search( "\.nds$", fullPath, flags = re.IGNORECASE ):
-                    gameInfo = self.processNDSFile( fullPath )
+                    gameInfo = self.processNDSFile( fullPath, interactive )
                     if gameInfo != 0:
                         self.db.addLocalRom( os.path.abspath( fullPath ), gameInfo )
                 elif re.search( "\.zip$", fullPath, flags = re.IGNORECASE ):
@@ -98,7 +111,7 @@ class DirScanner:
                                 # TODO: maybe we can use zipfile.read instead of actually unzipping stuff
                                 # NB: hardcoding /tmp/ is probably an awfull idea
                                 zipFile.extract( archiveFile, '/tmp/' )
-                                gameInfo = self.processNDSFile( '/tmp/' + archiveFile )
+                                gameInfo = self.processNDSFile( '/tmp/' + archiveFile, interactive )
 
                                 if gameInfo != 0:
                                     self.db.addLocalRom( os.path.abspath( fullPath ) + ":" + archiveFile, gameInfo )

@@ -39,6 +39,7 @@ class db_test( unittest.TestCase ):
         for( fileName, expectedResult ) in testNames.iteritems():
             self.assertListEqual( pyNDSrom.parseFileName( fileName ), expectedResult )
 
+    #TODO: actually test something here
     def testSQLImport( self ):
         db    = pyNDSrom.SQLdb( '../tests/sql' )
         xmlDB = pyNDSrom.AdvansceneXML( '../tests/nds.xml' )

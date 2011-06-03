@@ -101,7 +101,7 @@ class SQLdb():
                 releaseNumber = retVal[0]
             cursor.close()
         except Exception as e:
-            print "Failed to query db by crc32: %s" % e
+            print "Failed to query db by crc32 %s: %s" % ( crc32, e )
 
         return releaseNumber
 
@@ -114,7 +114,7 @@ class SQLdb():
                 releaseNumber = retVal[0]
             cursor.close()
         except Exception as e:
-            print "Failed to query db by release number: %s" % e
+            print "Failed to query db by release number %s: %s" % ( relNum, e )
 
         return releaseNumber
 
@@ -127,9 +127,23 @@ class SQLdb():
                 releaseNumber = retVal[0]
             cursor.close()
         except Exception as e:
-            print "Failed to query db by release number: %s" % e
+            print "Failed to query db by name %s: %s" % ( name, e )
 
         return releaseNumber
+
+    def getGameInfo( self, releaseNumber ):
+        gameInfo = None
+        try:
+            cursor = self.db.cursor()
+            retVal = cursor.execute( 'SELECT release_id, name, publisher, released_by FROM known_roms WHERE release_id=?', ( releaseNumber, ) ).fetchone()
+            if retVal:
+                gameInfo = retVal
+            cursor.close()
+        except Exception as e:
+            print "Failed to get game info by release number %s: %s" % ( releaseNumber, e )
+
+        return gameInfo
+
 
     def addLocalRom( self, filePath, releaseNumber ):
         normalizedName = parseFileName( filePath )[1]

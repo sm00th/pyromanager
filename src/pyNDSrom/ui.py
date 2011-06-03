@@ -1,12 +1,37 @@
 import pyNDSrom
 import cmdln
 import os
+import sys
 
 config = {
         'confDir' : os.path.expanduser( "~/.pyROManager" ),
         'dbFile'  : 'pyro.db',
         'xmlDB'   : 'ADVANsCEne_NDS_S.xml',
 }
+
+def question_yn( question, default="y" ):
+    choices = {
+            'y' : [ 'y', 1 ],
+            'n' : [ 'n', 0 ],
+        }
+    choices[default][0] = choices[default][0].upper()
+    choiceList = []
+    for vals in choices.values():
+        choiceList.append( vals[0] )
+    print "%s [%s] " % ( question, '/'.join( choiceList ) ),
+    reply = raw_input().lower()
+    if not reply:
+        reply = default
+    else:
+        reply = reply[0]
+
+    if reply not in choices:
+        print "Unexpected input"
+        return question_yn( question, default )
+
+    import pprint
+    pprint.pprint( choices )
+    return choices[reply][1]
 
 class cli( cmdln.Cmdln ):
 

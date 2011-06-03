@@ -64,7 +64,7 @@ class DirScanner:
         self.db = pyNDSrom.db.SQLdb( dbPath )
 
     def processNDSFile( self, ndsPath ):
-        gameInfo = []
+        gameInfo = None
         game = NDSFile( ndsPath )
         if game.isValid():
             gameInfo = self.db.searchByCRC( game.crc32 )
@@ -73,6 +73,8 @@ class DirScanner:
                 gameInfo = self.db.searchByReleaseNumber( releaseNumber )
                 if not gameInfo:
                     gameInfo = self.db.searchByName( gameName )
+        else:
+            gameInfo = 0
 
         return gameInfo
 
@@ -121,7 +123,7 @@ class DirScanner:
                 gameInfo = None
                 if re.search( "\.nds$", fullPath, flags = re.IGNORECASE ):
                     gameInfo = self.processNDSFile( fullPath )
-                    if gameInfo:
+                    if gameInfo != 0:
                         self.db.addLocalRom( os.path.abspath( fullPath ), gameInfo )
                 elif re.search( "\.zip$", fullPath, flags = re.IGNORECASE ):
                     try:
@@ -132,7 +134,7 @@ class DirScanner:
                                 zipFile.extract( archiveFile, '/tmp/' )
                                 gameInfo = self.processNDSFile( '/tmp/' + archiveFile )
 
-                                if gameInfo:
+                                if gameInfo != 0:
                                     self.db.addLocalRom( os.path.abspath( fullPath ) + ":" + archiveFile, gameInfo )
                                 os.unlink( '/tmp/' + archiveFile )
                         zipFile.close()

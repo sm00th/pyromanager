@@ -16,20 +16,20 @@ class NDSFile_test( unittest.TestCase ):
     def testScanDir( self ):
         scanner = pyNDSrom.DirScanner( '../tests/nds.xml' )
         self.assertListEqual( scanner.getGameList( '../tests' ), [
-                                                                  ['../tests/TinyFB.nds', 'TinyFB', 999999, 0x1ece1d01],
-                                                                  ['../tests/TinyFB.zip:TinyFB.nds', 'TinyFB', 999999, 0x1ece1d01]
+                                                                  ['../tests/TinyFB.nds', 999999, 'TinyFB', 0x1ece1d01],
+                                                                  ['../tests/TinyFB.zip:TinyFB.nds', 999999, 'TinyFB', 0x1ece1d01]
                                                                   ] )
 
-class XMLdb_test( unittest.TestCase ):
+class db_test( unittest.TestCase ):
     def testParse( self ):
         db = pyNDSrom.AdvansceneXML( '../tests/nds.xml' )
         self.assertEqual( db.filePath, '../tests/nds.xml' )
         self.assertEqual( len( db.gameList ), 7 )
-        self.assertEqual( len( db.gameList[0] ), 3 )
-        self.assertListEqual( db.searchByCRC( 0xB760405B ), [ 'Coropata', 4710, 0xB760405B ] )
+        self.assertEqual( len( db.gameList[0] ), 5 )
+        self.assertListEqual( db.searchByCRC( 0xB760405B ), [ 4710, 'Coropata', 0xB760405B ] )
         self.assertEqual( db.searchByCRC( 0xFFFFFFFF ), None )
-        self.assertListEqual( db.searchByName( 'Coropata' ), [ 'Coropata', 4710, 0xB760405B ] )
-        self.assertListEqual( db.searchByReleaseNumber( 4710 ), [ 'Coropata', 4710, 0xB760405B ] )
+        self.assertListEqual( db.searchByName( 'Coropata' ), [ 4710, 'Coropata', 0xB760405B ] )
+        self.assertListEqual( db.searchByReleaseNumber( 4710 ), [ 4710, 'Coropata', 0xB760405B ] )
 
     def testFileNameParser( self ):
         testNames = {
@@ -44,6 +44,11 @@ class XMLdb_test( unittest.TestCase ):
         }
         for( fileName, expectedResult ) in testNames.iteritems():
             self.assertListEqual( pyNDSrom.parseFileName( fileName ), expectedResult )
+
+    def testSQLImport( self ):
+        db = pyNDSrom.SQLdb( '../tests/sql' )
+        xmlDB = pyNDSrom.AdvansceneXML( '../tests/nds.xml' )
+        db.importKnownFrom( xmlDB )
 
 if __name__ == '__main__':
     unittest.main()

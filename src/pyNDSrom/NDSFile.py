@@ -60,7 +60,7 @@ class NDSFile:
 
 class DirScanner:
     def __init__( self, dbPath ):
-        self.db = pyNDSrom.xmlDB.AdvansceneXML( dbPath )
+        self.db = pyNDSrom.db.AdvansceneXML( dbPath )
 
     def processNDSFile( self, ndsPath ):
         gameInfo = []
@@ -68,7 +68,7 @@ class DirScanner:
         if game.isValid():
             gameInfo = self.db.searchByCRC( game.crc32 )
             if not gameInfo:
-                ( releaseNumber, gameName ) = pyNDSrom.xmlDB.parseFileName( ndsPath )
+                ( releaseNumber, gameName ) = pyNDSrom.db.parseFileName( ndsPath )
                 gameInfo = self.db.searchByReleaseNumber( releaseNumber )
                 if not gameInfo:
                     gameInfo = self.db.searchByName( gameName )

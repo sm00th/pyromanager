@@ -15,10 +15,15 @@ class cli( cmdln.Cmdln ):
         print "subcmd: %s, opts: %s" % ( subcmd, opts )
 
     @cmdln.alias( "l", "ls" )
+    @cmdln.option( "-d", "--duplicates", action = "store_true",
+                   help = "show duplicate entries only" )
+    @cmdln.option( "-k", "--known", action = "store_true",
+                   help = "query known roms, not the local ones" )
     def do_list( self, subcmd, opts, *terms ):
         """${cmd_name}: query db for roms
         
         ${cmd_usage}
+        ${cmd_option_list}
         """
         if terms:
             for term in terms:
@@ -27,10 +32,13 @@ class cli( cmdln.Cmdln ):
             print "list errything"
         print "subcmd: %s, opts: %s" % ( subcmd, opts )
 
+    @cmdln.option( "-x", "--xml",
+                   help = "specify xml file to updatefrom" )
     def do_updatedb( self, subcmd, opts ):
         """${cmd_name}: download and import new dat from advanscene
         
         ${cmd_usage}
+        ${cmd_option_list}
         """
         print "sir, we are going to download stuff, sir"
         print "subcmd: %s, opts: %s" % ( subcmd, opts )

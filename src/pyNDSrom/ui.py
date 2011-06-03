@@ -1,26 +1,43 @@
+import pyNDSrom
 import cmdln
+import os
+
+config = {
+        'confDir' : os.path.expanduser( "~/.pyROManager" ),
+        'dbFile'  : 'pyro.db',
+        'xmlDB'   : 'ADVANsCEne_NDS_S.xml',
+}
 
 class cli( cmdln.Cmdln ):
 
+    def get_optparser( self ):
+        parser = cmdln.Cmdln.get_optparser( self )
+        parser.add_option( "--with-db", dest="dbFile", help="use specified db-file" )
+        return parser
+
     @cmdln.alias( "i", "im" )
-    @cmdln.option( "-s", "--no-subdirs", action = "store_true",
-                  help = "do not scan subdirs" )
-    @cmdln.option( "-n", "--non-interactive", action = "store_true",
-                   help = "do not ask any questions(probably a bad idea)" )
+    @cmdln.option( "--no-subdirs", action="store_true",
+            help="do not scan subdirs" )
+    @cmdln.option( "--non-interactive", action="store_true",
+            help="do not ask any questions(probably a bad idea)" )
     def do_import( self, subcmd, opts, path ):
         """${cmd_name}: import roms from dir into database
         
         ${cmd_usage}
         ${cmd_option_list}
         """
+
+        scanner = pyNDSrom.DirScanner( "%s/%s" % ( config['confDir'],
+            config['dbFile'] ) )
+        scanner.scanIntoDB( path )
         print "scanning %s(not really yet)" % path
         print "subcmd: %s, opts: %s" % ( subcmd, opts )
 
     @cmdln.alias( "l", "ls" )
-    @cmdln.option( "-d", "--duplicates", action = "store_true",
-                   help = "show duplicate entries only" )
+    @cmdln.option( "-d", "--duplicates", action="store_true",
+            help="show duplicate entries only" )
     @cmdln.option( "-k", "--known", action = "store_true",
-                   help = "query known roms, not the local ones" )
+            help="query known roms, not the local ones" )
     def do_list( self, subcmd, opts, *terms ):
         """${cmd_name}: query db for roms
         
@@ -35,13 +52,17 @@ class cli( cmdln.Cmdln ):
         print "subcmd: %s, opts: %s" % ( subcmd, opts )
 
     @cmdln.option( "-x", "--xml",
-                   help = "specify xml file to updatefrom" )
+            help="specify xml file to updatefrom" )
     def do_updatedb( self, subcmd, opts ):
         """${cmd_name}: download and import new dat from advanscene
         
         ${cmd_usage}
         ${cmd_option_list}
         """
-        print "sir, we are going to download stuff, sir"
+
+        xml = pyNDSrom.AdvansceneXML( '%s/%s' % ( config['confDir'],
+            config['xmlDB'] ) )
+        db = pyNDSrom.SQLdb( '%s/%s' % ( config['confDir'], config['dbFile'] ) )
+        db.importKnownFrom( xml )
         print "subcmd: %s, opts: %s" % ( subcmd, opts )
 

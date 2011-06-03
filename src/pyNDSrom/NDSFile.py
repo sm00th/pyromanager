@@ -77,7 +77,7 @@ class DirScanner:
 
         return gameInfo
 
-    def scanIntoDB( self, path, interactive = 0 ):
+    def scanIntoDB( self, path, quiet=0, interactive=0 ):
         dirList = os.listdir( path )
         for fileName in dirList:
             fullPath = path + "/" + fileName

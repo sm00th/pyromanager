@@ -15,7 +15,7 @@ def stripGameName( gameName ):
 def parseFileName( fileName ):
     releaseNum = None
 
-    fileName = re.sub( r"^.*/", '', fileName )
+    fileName = re.sub( r"^.*(/|:)", '', fileName )
     fileName = fileName.lower()
     fileName = re.sub( "\.nds$", '', fileName )
     fileName = re.sub( "_", ' ', fileName )
@@ -72,8 +72,8 @@ class SQLdb():
 
     def _createTables( self ):
         cursor = self.db.cursor()
-        cursor.execute( 'CREATE TABLE IF NOT EXISTS known_roms (release_id INTEGER PRIMARY KEY, name TEXT, crc32 NUMERIC, publisher TEXT, released_by TEXT);' )
-        cursor.execute( 'CREATE TABLE IF NOT EXISTS local_roms (id INTEGER PRIMARY KEY, release_id TEXT, path_to_file TEXT, UNIQUE( path_to_file ) ON CONFLICT REPLACE);' )
+        cursor.execute( 'CREATE TABLE IF NOT EXISTS known_roms (release_id INTEGER PRIMARY KEY, name TEXT, crc32 NUMERIC, publisher TEXT, released_by TEXT, normalized_name TEXT);' )
+        cursor.execute( 'CREATE TABLE IF NOT EXISTS local_roms (id INTEGER PRIMARY KEY, release_id TEXT, path_to_file TEXT, normalized_name TEXT, UNIQUE( path_to_file ) ON CONFLICT REPLACE);' )
         self.db.commit()
         cursor.close()
 
@@ -84,7 +84,8 @@ class SQLdb():
             cursor = self.db.cursor()
             dataList = provider.getDBData()
             for dataSet in dataList:
-                cursor.execute( 'INSERT OR REPLACE INTO known_roms VALUES(?,?,?,?,?)', dataSet )
+                normalizedName = stripGameName( dataSet[1] )
+                cursor.execute( 'INSERT OR REPLACE INTO known_roms VALUES(?,?,?,?,?,?)', dataSet + ( normalizedName.lower(), ) )
             self.db.commit()
             cursor.close()
         except Exception as e:
@@ -121,7 +122,7 @@ class SQLdb():
         releaseNumber = None
         try:
             cursor = self.db.cursor()
-            retVal = cursor.execute( 'SELECT release_id FROM known_roms WHERE name LIKE ?', ( name, ) ).fetchone()
+            retVal = cursor.execute( 'SELECT release_id FROM known_roms WHERE normalized_name LIKE ?', ( name, ) ).fetchone()
             if retVal:
                 releaseNumber = retVal[0]
             cursor.close()
@@ -131,9 +132,10 @@ class SQLdb():
         return releaseNumber
 
     def addLocalRom( self, filePath, releaseNumber ):
+        normalizedName = parseFileName( filePath )[1]
         try:
             cursor = self.db.cursor()
-            cursor.execute( 'INSERT OR REPLACE INTO local_roms ( release_id, path_to_file ) values ( ?, ? )', ( releaseNumber, filePath ) )
+            cursor.execute( 'INSERT OR REPLACE INTO local_roms ( release_id, path_to_file, normalized_name ) values ( ?, ?, ? )', ( releaseNumber, filePath, normalizedName ) )
             self.db.commit()
         except Exception as e:
             print "Failed to add (%s,%s) to local roms: %s" % ( filePath, releaseNumber, e )

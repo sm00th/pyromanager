@@ -96,6 +96,7 @@ class DirScanner:
                         zipFile = zipfile.ZipFile( fullPath, "r" )
                         for archiveFile in zipFile.namelist():
                             if re.search( "\.nds$", archiveFile, flags = re.IGNORECASE ):
+                                # TODO: maybe we can use zipfile.read instead of actually unzipping stuff
                                 zipFile.extract( archiveFile, '/tmp/' )
                                 gameInfo = self.processNDSFile( '/tmp/' + archiveFile )
 
@@ -108,3 +109,34 @@ class DirScanner:
                         print "Failed parsing zip-archive %s: %s" % ( fullPath, e )
 
         return gameList
+
+    def scanIntoDB( self, path ):
+        dirList = os.listdir( path )
+        for fileName in dirList:
+            fullPath = path + "/" + fileName
+            if os.path.isdir( fullPath ):
+                self.scanIntoDB( fullPath )
+            # FIXME: ugly nesting
+            else:
+                gameInfo = None
+                if re.search( "\.nds$", fullPath, flags = re.IGNORECASE ):
+                    gameInfo = self.processNDSFile( fullPath )
+                    if gameInfo:
+                        self.db.addLocalRom( fullPath, gameInfo )
+                elif re.search( "\.zip$", fullPath, flags = re.IGNORECASE ):
+                    try:
+                        zipFile = zipfile.ZipFile( fullPath, "r" )
+                        for archiveFile in zipFile.namelist():
+                            if re.search( "\.nds$", archiveFile, flags = re.IGNORECASE ):
+                                # TODO: maybe we can use zipfile.read instead of actually unzipping stuff
+                                zipFile.extract( archiveFile, '/tmp/' )
+                                gameInfo = self.processNDSFile( '/tmp/' + archiveFile )
+
+                                if gameInfo:
+                                    self.db.addLocalRom( fullPath + ":" + archiveFile, gameInfo )
+                                os.unlink( '/tmp/' + archiveFile )
+                        zipFile.close()
+                    except Exception as e:
+                        print "Failed parsing zip-archive %s: %s" % ( fullPath, e )
+
+        return 1

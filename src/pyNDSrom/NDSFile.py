@@ -104,6 +104,6 @@ class DirScanner:
                                 os.unlink( '/tmp/' + archiveFile )
                         zipFile.close()
                     except Exception as e:
-                        print "Failed parsing zip-archive: %s" % ( e )
+                        print "Failed parsing zip-archive %s: %s" % ( fullPath, e )
 
         return gameList

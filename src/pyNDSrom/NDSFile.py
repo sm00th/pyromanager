@@ -122,7 +122,7 @@ class DirScanner:
                 if re.search( "\.nds$", fullPath, flags = re.IGNORECASE ):
                     gameInfo = self.processNDSFile( fullPath )
                     if gameInfo:
-                        self.db.addLocalRom( fullPath, gameInfo )
+                        self.db.addLocalRom( os.path.abspath( fullPath ), gameInfo )
                 elif re.search( "\.zip$", fullPath, flags = re.IGNORECASE ):
                     try:
                         zipFile = zipfile.ZipFile( fullPath, "r" )
@@ -133,7 +133,7 @@ class DirScanner:
                                 gameInfo = self.processNDSFile( '/tmp/' + archiveFile )
 
                                 if gameInfo:
-                                    self.db.addLocalRom( fullPath + ":" + archiveFile, gameInfo )
+                                    self.db.addLocalRom( os.path.abspath( fullPath ) + ":" + archiveFile, gameInfo )
                                 os.unlink( '/tmp/' + archiveFile )
                         zipFile.close()
                     except Exception as e:

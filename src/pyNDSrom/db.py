@@ -91,9 +91,9 @@ class SQLdb():
         releaseNumber = None
         try:
             cursor = self.db.cursor()
-            retVal = cursor.execute( 'select release_id from known_roms where crc32=?', ( crc32, ) )
+            retVal = cursor.execute( 'select release_id from known_roms where crc32=?', ( crc32, ) ).fetchone()
             if retVal:
-                releaseNumber = retVal.fetchone()[0]
+                releaseNumber = retVal[0]
         except Exception as e:
             print "Failed to query db by crc32: %s" % e
 
@@ -104,9 +104,9 @@ class SQLdb():
         releaseNumber = None
         try:
             cursor = self.db.cursor()
-            retVal = cursor.execute( 'select release_id from known_roms where release_id=?', ( relNum, ) )
+            retVal = cursor.execute( 'select release_id from known_roms where release_id=?', ( relNum, ) ).fetchone()
             if retVal:
-                releaseNumber = retVal.fetchone()[0]
+                releaseNumber = retVal[0]
         except Exception as e:
             print "Failed to query db by release number: %s" % e
 
@@ -117,9 +117,9 @@ class SQLdb():
         releaseNumber = None
         try:
             cursor = self.db.cursor()
-            retVal = cursor.execute( 'select release_id from known_roms where name like ?', ( name, ) )
+            retVal = cursor.execute( 'select release_id from known_roms where name like ?', ( name, ) ).fetchone()
             if retVal:
-                releaseNumber = retVal.fetchone()[0]
+                releaseNumber = retVal[0]
         except Exception as e:
             print "Failed to query db by release number: %s" % e
 

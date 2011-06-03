@@ -73,7 +73,7 @@ class SQLdb():
     def _createTables( self ):
         cursor = self.db.cursor()
         cursor.execute( 'CREATE TABLE IF NOT EXISTS known_roms (release_id INTEGER PRIMARY KEY, name TEXT, crc32 NUMERIC, publisher TEXT, released_by TEXT);' )
-        cursor.execute( 'CREATE TABLE IF NOT EXISTS local_roms (id INTEGER PRIMARY KEY, release_id TEXT, path_to_file TEXT);' )
+        cursor.execute( 'CREATE TABLE IF NOT EXISTS local_roms (id INTEGER PRIMARY KEY, release_id TEXT, UNIQUE( path_to_file TEXT ) ON CONFLICT REPLACE);' )
         self.db.commit()
         cursor.close()
 

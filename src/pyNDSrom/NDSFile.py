@@ -66,19 +66,22 @@ class DirScanner:
         result = 0
         if type( dbRelNum ) == int:
             gameInfo = self.db.getGameInfo( dbRelNum )
-            print "File '%s' was identified as %d - %s" % (
+            print "File '%s' was identified as %d - %s (%s) Released by: %s" % (
                     re.sub( r"^.*(/|:)", '', ndsPath ),
                     gameInfo[0],
-                    gameInfo[1]
+                    gameInfo[1],
+                    pyNDSrom.db.decodeLocation( gameInfo[4] ),
+                    gameInfo[3],
                 )
             result = pyNDSrom.ui.question_yn( "Is this correct?" )
         elif type( dbRelNum ) == list:
-            print "File '%s' can be one of the following:" % ( ndsPath )
+            print "File '%s' can be one of the following:" % ( re.sub( r"^.*(/|:)", '', ndsPath ) )
             index = 0
             for relNum in dbRelNum:
                 gameInfo = self.db.getGameInfo( relNum )
                 # FIXME: reeeeeeealy need lang here
-                print " %d. %d - %s" % ( index, gameInfo[0], gameInfo[1] )
+                print " %d. %d - %s (%s) Released by: %s" % ( index, gameInfo[0],
+                        gameInfo[1], pyNDSrom.db.decodeLocation( gameInfo[4] ), gameInfo[3] )
                 index += 1
             result = pyNDSrom.ui.listQuestion( "Which one?", range(index) + [None] )
 

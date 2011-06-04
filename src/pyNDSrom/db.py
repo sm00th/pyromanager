@@ -18,6 +18,17 @@ config = {
     },
 }
 
+def decodeLocation( locationId, returnType=1 ):
+    result = 'Unknown: %d' % locationId
+    if returnType not in range(3):
+        returnType = 1
+    try:
+        result = config['location'][locationId][returnType]
+    except:
+        pass
+
+    return result
+
 def stripGameName( gameName ):
     gameName = re.sub( r"(\(|\[)[^\(\)\[\]]*(\)|\])", '', gameName )
     gameName = re.sub( r"the", '', gameName )
@@ -63,8 +74,7 @@ class SQLdb():
 
     def _createTables( self ):
         cursor = self.db.cursor()
-        # TODO: add location to both tables
-        cursor.execute( 'CREATE TABLE IF NOT EXISTS known_roms (release_id INTEGER PRIMARY KEY, name TEXT, crc32 NUMERIC, publisher TEXT, released_by TEXT, normalized_name TEXT);' )
+        cursor.execute( 'CREATE TABLE IF NOT EXISTS known_roms (release_id INTEGER PRIMARY KEY, name TEXT, crc32 NUMERIC, publisher TEXT, released_by TEXT, location NUMERIC, normalized_name TEXT);' )
         cursor.execute( 'CREATE TABLE IF NOT EXISTS local_roms (id INTEGER PRIMARY KEY, release_id TEXT, path_to_file TEXT, normalized_name TEXT, UNIQUE( path_to_file ) ON CONFLICT REPLACE);' )
         self.db.commit()
         cursor.close()
@@ -77,7 +87,7 @@ class SQLdb():
             dataList = provider.getDBData()
             for dataSet in dataList:
                 normalizedName = stripGameName( dataSet[1] )
-                cursor.execute( 'INSERT OR REPLACE INTO known_roms VALUES(?,?,?,?,?,?)', dataSet + ( normalizedName.lower(), ) )
+                cursor.execute( 'INSERT OR REPLACE INTO known_roms VALUES(?,?,?,?,?,?,?)', dataSet + ( normalizedName.lower(), ) )
             self.db.commit()
             cursor.close()
         except Exception as e:
@@ -128,7 +138,7 @@ class SQLdb():
         gameInfo = None
         try:
             cursor = self.db.cursor()
-            retVal = cursor.execute( 'SELECT release_id, name, publisher, released_by FROM known_roms WHERE release_id=?', ( releaseNumber, ) ).fetchone()
+            retVal = cursor.execute( 'SELECT release_id, name, publisher, released_by, location FROM known_roms WHERE release_id=?', ( releaseNumber, ) ).fetchone()
             if retVal:
                 gameInfo = retVal
             cursor.close()
@@ -169,9 +179,10 @@ class AdvansceneXML():
         title      = getText( gameNode.getElementsByTagName( 'title' )[0].childNodes )
         publisher  = getText( gameNode.getElementsByTagName( 'publisher' )[0].childNodes )
         releasedBy = getText( gameNode.getElementsByTagName( 'sourceRom' )[0].childNodes )
+        location   = getText( gameNode.getElementsByTagName( 'location' )[0].childNodes )
         relNum     = int( getText( gameNode.getElementsByTagName( 'releaseNumber' )[0].childNodes ) )
         crc32      = self.getCRC( gameNode )
-        return ( relNum, title, crc32, publisher, releasedBy )
+        return ( relNum, title, crc32, publisher, releasedBy, location )
 
     def getCRC( self, gameNode ):
         for crc in gameNode.getElementsByTagName( 'romCRC' ):

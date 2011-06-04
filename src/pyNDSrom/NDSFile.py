@@ -16,6 +16,10 @@ def byteToString( byteString ):
 def byteToInt( byteString ):
     return struct.unpack( 'i', byteString + ( '\x00' * ( 4 - len( byteString ) ) ) )[0]
 
+def calcCRC( fileHandler ):
+    fileHandler.seek( 0 )
+    return binascii.crc32( fileHandler.read() ) & 0xFFFFFFFF
+
 def capsize( cap ):
     return pow( 2, 20 + cap ) / 8388608
 
@@ -51,8 +55,7 @@ class NDSFile:
             self.encryption = byteToInt( nds.read( 1 ) )
             self.capacity   = capsize( byteToInt( nds.read( 2 ) ) )
 
-            nds.seek( 0 )
-            self.crc32 = binascii.crc32( nds.read() ) & 0xFFFFFFFF
+            self.crc32 = calcCRC( nds )
 
             nds.close()
         except IOError:
@@ -79,7 +82,6 @@ class DirScanner:
             index = 0
             for relNum in dbRelNum:
                 gameInfo = self.db.getGameInfo( relNum )
-                # FIXME: reeeeeeealy need lang here
                 print " %d. %d - %s (%s) Released by: %s" % ( index, gameInfo[0],
                         gameInfo[1], pyNDSrom.db.decodeLocation( gameInfo[4] ), gameInfo[3] )
                 index += 1
@@ -120,7 +122,6 @@ class DirScanner:
             fullPath = path + "/" + fileName
             if os.path.isdir( fullPath ):
                 self.scanIntoDB( fullPath )
-            # FIXME: ugly nesting
             else:
                 gameInfo = None
                 if re.search( "\.nds$", fullPath, flags = re.IGNORECASE ):
@@ -132,8 +133,7 @@ class DirScanner:
                         zipFile = zipfile.ZipFile( fullPath, "r" )
                         for archiveFile in zipFile.namelist():
                             if re.search( "\.nds$", archiveFile, flags = re.IGNORECASE ):
-                                # TODO: maybe we can use zipfile.read instead of actually unzipping stuff
-                                # NB: hardcoding /tmp/ is probably an awfull idea
+                                # FIXME: hardcoding /tmp/ is probably an awfull idea
                                 zipFile.extract( archiveFile, '/tmp/' )
                                 gameInfo = self.processNDSFile( '/tmp/' + archiveFile, interactive )
 

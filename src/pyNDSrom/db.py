@@ -1,4 +1,3 @@
-''' Classes to import data from various xml databases '''
 import sqlite3
 from xml.dom import minidom
 import re
@@ -24,7 +23,7 @@ def decodeLocation( locationId, returnType=1 ):
 
 def stripGameName( gameName ):
     gameName = re.sub( r"(\(|\[)[^\(\)\[\]]*(\)|\])" , ''  , gameName )
-    gameName = re.sub( r"the"                        , ''  , gameName )
+    gameName = re.sub( r"(the|and)"                  , ''  , gameName )
     gameName = re.sub( r"[^\w\d\s]"                  , ''  , gameName )
     gameName = re.sub( r"\s+"                        , ' ' , gameName )
     gameName = gameName.strip()
@@ -39,7 +38,6 @@ def parseFileName( fileName ):
     fileName = re.sub( "\.nds$"    , ''  , fileName )
     fileName = re.sub( "_"         , ' ' , fileName )
 
-    # TODO: add release location parser
     releaseNum_pattern = re.compile( r"((\[|\()?(\d+)(\]|\))|(\d+)\s*-\s*)\s*(.*)" )
     matchReleaseNum    = releaseNum_pattern.match( fileName )
 

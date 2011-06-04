@@ -23,14 +23,14 @@ class db_test( unittest.TestCase ):
 
     def testFileNameParser( self ):
         testNames = {
-            "games/0028 - Kirby - Canvas Curse (USA).NDS"                                                  : [ 28, "kirby canvas curse" ],
-            "../more/depth/(3686) - Zubo (USA) (En,Fr,Es).nds"                                             : [ 3686, "zubo" ],
-            "[3686] Zubo.nds"                                                                              : [ 3686, "zubo" ],
-            "Shin Megami Tensei - Strange Journey.nds"                                                     : [ None, "shin megami tensei strange journey" ],
-            "1514_-_The_Legend_of_Zelda_Phantom_Hourglass.nds"                                               : [ 1514, "legend of zelda phantom hourglass" ],
-            "9 Hours 9 Persons 9 Doors.nds"                                                                : [ None, "9 hours 9 persons 9 doors" ],
-            "123 - 9 Hours, 9 Persons, 9 Doors.nds"                                                        : [ 123, "9 hours 9 persons 9 doors" ],
-            "3776 - Broken Sword - Shadow of the Templars - The Director's Cut (USA) (En,Fr,De,Es,It).nds" : [ 3776, "broken sword shadow of templars directors cut" ],
+            "games/0028 - Kirby - Canvas Curse (EUR).NDS"                                                  : [ 28, "kirby canvas curse", 0 ],
+            "../more/depth/(3686) - Zubo (USA) (En,Fr,Es).nds"                                             : [ 3686, "zubo", 1 ],
+            "[3686] Zubo.nds"                                                                              : [ 3686, "zubo", None ],
+            "Shin Megami Tensei - Strange Journey.nds"                                                     : [ None, "shin megami tensei strange journey", None ],
+            "1514_-_The_Legend_of_Zelda_Phantom_Hourglass.nds"                                             : [ 1514, "legend of zelda phantom hourglass", None ],
+            "9 Hours 9 Persons 9 Doors.nds"                                                                : [ None, "9 hours 9 persons 9 doors", None ],
+            "123 - 9 Hours, 9 Persons, 9 Doors.nds"                                                        : [ 123, "9 hours 9 persons 9 doors", None ],
+            "3776 - Broken Sword - Shadow of the Templars - The Director's Cut [USA] (En,Fr,De,Es,It).nds" : [ 3776, "broken sword shadow of templars directors cut", 1 ],
         }
         for( fileName, expectedResult ) in testNames.iteritems():
             self.assertListEqual( pyNDSrom.parseFileName( fileName ), expectedResult )

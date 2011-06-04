@@ -6,7 +6,7 @@ from cfg import config
 
 def encodeLocation( locationName ):
     for ( locationId, locationAliases ) in config['location'].iteritems():
-        if locationName in locationAliases:
+        if locationName.lower() in [ x.lower() for x in locationAliases ]:
             return locationId
 
     return None
@@ -40,7 +40,6 @@ def parseFileName( fileName ):
     fileName = re.sub( "_"         , ' ' , fileName )
 
     # TODO: add release location parser
-    #releaseNum_pattern = re.compile( r"(\[|\()?(\d+)(\]|\))?\s*-?(.*)" )
     releaseNum_pattern = re.compile( r"((\[|\()?(\d+)(\]|\))|(\d+)\s*-\s*)\s*(.*)" )
     matchReleaseNum    = releaseNum_pattern.match( fileName )
 
@@ -52,9 +51,14 @@ def parseFileName( fileName ):
             releaseNum = int( matchReleaseNum.group( 5 ) )
             fileName   = matchReleaseNum.group( 6 )
 
+    location = None
+    for tag in re.findall( r"(\(|\[)(\w+)(\)|\])", fileName ):
+        if not location:
+            location = encodeLocation( tag[1] )
+
     fileName = stripGameName( fileName )
 
-    return [ releaseNum, fileName ]
+    return [ releaseNum, fileName, location ]
 
 def getText( nodeList ):
     rc = []
@@ -119,12 +123,16 @@ class SQLdb():
 
         return releaseNumber
 
-    def searchByName( self, name ):
+    def searchByName( self, name, location=None ):
         relNumList = []
         try:
-            cursor = self.db.cursor()
+            retVal     = None
+            cursor     = self.db.cursor()
             searchName = '%' + re.sub( r"\s", '%', name ) + '%'
-            retVal = cursor.execute( 'SELECT release_id FROM known_roms WHERE normalized_name LIKE ?', ( searchName, ) ).fetchall()
+            if location != None:
+                retVal = cursor.execute( 'SELECT release_id FROM known_roms WHERE normalized_name LIKE ? and location=?', ( searchName, location ) ).fetchall()
+            else:
+                retVal = cursor.execute( 'SELECT release_id FROM known_roms WHERE normalized_name LIKE ?', ( searchName, ) ).fetchall()
             if retVal:
                 relNumList = [ x[0] for x in retVal ]
             cursor.close()

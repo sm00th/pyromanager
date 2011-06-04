@@ -20,10 +20,6 @@ class db_test( unittest.TestCase ):
         self.assertEqual( db.filePath, '../tests/nds.xml' )
         self.assertEqual( len( db.gameList ), 7 )
         self.assertEqual( len( db.gameList[0] ), 5 )
-        self.assertListEqual( db.searchByCRC( 0xB760405B ), [ 4710, 'Coropata', 0xB760405B ] )
-        self.assertEqual( db.searchByCRC( 0xFFFFFFFF ), None )
-        self.assertListEqual( db.searchByName( 'Coropata' ), [ 4710, 'Coropata', 0xB760405B ] )
-        self.assertListEqual( db.searchByReleaseNumber( 4710 ), [ 4710, 'Coropata', 0xB760405B ] )
 
     def testFileNameParser( self ):
         testNames = {

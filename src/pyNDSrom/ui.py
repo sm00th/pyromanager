@@ -9,7 +9,25 @@ config = {
         'xmlDB'   : 'ADVANsCEne_NDS_S.xml',
 }
 
-def question_yn( question, default="y" ):
+def listQuestion( msg, choiceList, default=None ):
+    print "%s [%s](Default: %s)" % ( msg, '/'.join( [ str(x) for x in choiceList ] ), default ),
+    reply = raw_input().lower()
+    if not reply:
+        reply = default
+    else:
+        try:
+            reply = int( reply[0] )
+        except:
+            reply = ''
+
+    if reply not in choiceList:
+        print "Unexpected input"
+        return listQuestion( msg, choiceList, default )
+
+    return reply
+
+
+def question_yn( msg, default="y" ):
     choices = {
             'y' : [ 'y', 1 ],
             'n' : [ 'n', 0 ],
@@ -18,7 +36,7 @@ def question_yn( question, default="y" ):
     choiceList = []
     for vals in choices.values():
         choiceList.append( vals[0] )
-    print "%s [%s] " % ( question, '/'.join( choiceList ) ),
+    print "%s [%s] " % ( msg, '/'.join( choiceList ) ),
     reply = raw_input().lower()
     if not reply:
         reply = default
@@ -26,8 +44,8 @@ def question_yn( question, default="y" ):
         reply = reply[0]
 
     if reply not in choices:
-        print "Unexpected input"
-        return question_yn( question, default )
+        print "Unexpected input: %s" % reply
+        return question_yn( msg, default )
 
     return choices[reply][1]
 

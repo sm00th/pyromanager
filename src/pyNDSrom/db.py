@@ -3,6 +3,21 @@ import sqlite3
 from xml.dom import minidom
 import re
 
+config = {
+    'location' : {
+        0  : ( 'Europe'      , 'EUR'   , 'E' ),
+        1  : ( 'USA'         , 'USA'   , 'U' ),
+        2  : ( 'Germany'     , 'GER'   , 'G' ),
+        4  : ( 'Spain'       , 'SPA'   , 'S' ),
+        5  : ( 'France'      , 'FRA'   , 'F' ),
+        6  : ( 'Italy'       , 'ITA'   , 'I' ),
+        7  : ( 'Japan'       , 'JPN'   , 'J' ),
+        8  : ( 'Netherlands' , 'DUTCH' , 'N' ),
+        19 : ( 'Australia'   , 'AUS'   , 'A' ),
+        22 : ( 'Korea'       , 'KOR'   , 'K' ),
+    },
+}
+
 def stripGameName( gameName ):
     gameName = re.sub( r"(\(|\[)[^\(\)\[\]]*(\)|\])", '', gameName )
     gameName = re.sub( r"the", '', gameName )
@@ -20,6 +35,7 @@ def parseFileName( fileName ):
     fileName = re.sub( "\.nds$", '', fileName )
     fileName = re.sub( "_", ' ', fileName )
 
+    # TODO: add release location parser
     releaseNum_pattern = re.compile( r"(\[|\()?(\d+)(\]|\))?\s*-?(.*)" )
     matchReleaseNum = releaseNum_pattern.match( fileName )
     if matchReleaseNum:
@@ -37,31 +53,6 @@ def getText( nodeList ):
             rc.append( node.data )
     return ''.join( rc )
 
-def searchByCRC( gameList, crc32 ):
-    # TODO: sick and gay, scratch that, creating bintree during parsing might
-    # improve things, othervise - better do nothing
-    for game in gameList:
-        if game[2] == crc32:
-            return [ game[0], game[1], game[2] ]
-    return None
-
-def searchByReleaseNumber( gameList, releaseNumber ):
-    # TODO: same as crc32
-    for game in gameList:
-        if game[0] == releaseNumber:
-            return [ game[0], game[1], game[2] ]
-    return None
-
-
-def searchByName( gameList, gameName ):
-    for game in gameList:
-        # TODO: Levenshtein distance is good enough, probably
-        # also something to strip or process non-name info like release number
-        # and regioncode in filename    
-        if re.search( gameName, stripGameName( game[1] ), re.IGNORECASE ):
-            return [ game[0], game[1], game[2] ]
-    return None
-
 class SQLdb():
     def __init__( self, dbFile ):
         # TODO: check if dbFile specified and read from config?
@@ -72,6 +63,7 @@ class SQLdb():
 
     def _createTables( self ):
         cursor = self.db.cursor()
+        # TODO: add location to both tables
         cursor.execute( 'CREATE TABLE IF NOT EXISTS known_roms (release_id INTEGER PRIMARY KEY, name TEXT, crc32 NUMERIC, publisher TEXT, released_by TEXT, normalized_name TEXT);' )
         cursor.execute( 'CREATE TABLE IF NOT EXISTS local_roms (id INTEGER PRIMARY KEY, release_id TEXT, path_to_file TEXT, normalized_name TEXT, UNIQUE( path_to_file ) ON CONFLICT REPLACE);' )
         self.db.commit()
@@ -119,17 +111,18 @@ class SQLdb():
         return releaseNumber
 
     def searchByName( self, name ):
-        releaseNumber = None
+        relNumList = []
         try:
             cursor = self.db.cursor()
-            retVal = cursor.execute( 'SELECT release_id FROM known_roms WHERE normalized_name LIKE ?', ( name, ) ).fetchone()
+            searchName = '%' + re.sub( r"\s", '%', name ) + '%'
+            retVal = cursor.execute( 'SELECT release_id FROM known_roms WHERE normalized_name LIKE ?', ( searchName, ) ).fetchall()
             if retVal:
-                releaseNumber = retVal[0]
+                relNumList = [ x[0] for x in retVal ]
             cursor.close()
         except Exception as e:
             print "Failed to query db by name %s: %s" % ( name, e )
 
-        return releaseNumber
+        return relNumList
 
     def getGameInfo( self, releaseNumber ):
         gameInfo = None
@@ -179,16 +172,6 @@ class AdvansceneXML():
         relNum     = int( getText( gameNode.getElementsByTagName( 'releaseNumber' )[0].childNodes ) )
         crc32      = self.getCRC( gameNode )
         return ( relNum, title, crc32, publisher, releasedBy )
-
-    def searchByCRC( self, crc32 ):
-        return searchByCRC( self.gameList, crc32 )
-
-    def searchByName( self, name ):
-        return searchByName( self.gameList, name )
-
-    def searchByReleaseNumber( self, releaseNumber ):
-        # TODO: check if the names are relatively the same or let the user choose if found release is ok
-        return searchByReleaseNumber( self.gameList, releaseNumber )
 
     def getCRC( self, gameNode ):
         for crc in gameNode.getElementsByTagName( 'romCRC' ):

@@ -63,13 +63,26 @@ class DirScanner:
         self.db = pyNDSrom.db.SQLdb( dbPath )
 
     def qustionableFile( self, dbRelNum, ndsPath ):
-        gameInfo = self.db.getGameInfo( dbRelNum )
-        print "File '%s' was identified as %d - %s" % (
-                re.sub( r"^.*(/|:)", '', ndsPath ),
-                gameInfo[0],
-                gameInfo[1]
-            )
-        return pyNDSrom.ui.question_yn( "Is this correct?" )
+        result = 0
+        if type( dbRelNum ) == int:
+            gameInfo = self.db.getGameInfo( dbRelNum )
+            print "File '%s' was identified as %d - %s" % (
+                    re.sub( r"^.*(/|:)", '', ndsPath ),
+                    gameInfo[0],
+                    gameInfo[1]
+                )
+            result = pyNDSrom.ui.question_yn( "Is this correct?" )
+        elif type( dbRelNum ) == list:
+            print "File '%s' can be one of the following:" % ( ndsPath )
+            index = 0
+            for relNum in dbRelNum:
+                gameInfo = self.db.getGameInfo( relNum )
+                # FIXME: reeeeeeealy need lang here
+                print " %d. %d - %s" % ( index, gameInfo[0], gameInfo[1] )
+                index += 1
+            result = pyNDSrom.ui.listQuestion( "Which one?", range(index) + [None] )
+
+        return result
 
     def processNDSFile( self, ndsPath, interactive=1 ):
         dbRelNum = None
@@ -78,16 +91,18 @@ class DirScanner:
             dbRelNum = self.db.searchByCRC( game.crc32 )
             if not dbRelNum:
                 ( releaseNumber, gameName ) = pyNDSrom.db.parseFileName( ndsPath )
-                foundByRelNum = self.db.searchByReleaseNumber( releaseNumber )
-                foundByName   = self.db.searchByName( gameName )
-                if foundByRelNum == foundByName:
+                foundByRelNum   = self.db.searchByReleaseNumber( releaseNumber )
+                foundByNameList = self.db.searchByName( gameName )
+                if foundByRelNum in foundByNameList:
                     dbRelNum = foundByRelNum
                 else:
                     if foundByRelNum and self.qustionableFile( foundByRelNum, ndsPath ):
                         dbRelNum = foundByRelNum
                     else:
-                        if foundByName and self.qustionableFile( foundByName, ndsPath ):
-                            dbRelNum = foundByName
+                        if foundByNameList:
+                            answer = self.qustionableFile( foundByNameList, ndsPath )
+                            if answer:
+                                dbRelNum = foundByNameList[answer]
         else:
             dbRelNum = 0
 

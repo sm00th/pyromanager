@@ -2,21 +2,14 @@
 import sqlite3
 from xml.dom import minidom
 import re
+from cfg import config
 
-config = {
-    'location' : {
-        0  : ( 'Europe'      , 'EUR'   , 'E' ),
-        1  : ( 'USA'         , 'USA'   , 'U' ),
-        2  : ( 'Germany'     , 'GER'   , 'G' ),
-        4  : ( 'Spain'       , 'SPA'   , 'S' ),
-        5  : ( 'France'      , 'FRA'   , 'F' ),
-        6  : ( 'Italy'       , 'ITA'   , 'I' ),
-        7  : ( 'Japan'       , 'JPN'   , 'J' ),
-        8  : ( 'Netherlands' , 'DUTCH' , 'N' ),
-        19 : ( 'Australia'   , 'AUS'   , 'A' ),
-        22 : ( 'Korea'       , 'KOR'   , 'K' ),
-    },
-}
+def encodeLocation( locationName ):
+    for ( locationId, locationAliases ) in config['location'].iteritems():
+        if locationName in locationAliases:
+            return locationId
+
+    return None
 
 def decodeLocation( locationId, returnType=1 ):
     result = 'Unknown: %d' % locationId
@@ -30,10 +23,10 @@ def decodeLocation( locationId, returnType=1 ):
     return result
 
 def stripGameName( gameName ):
-    gameName = re.sub( r"(\(|\[)[^\(\)\[\]]*(\)|\])", '', gameName )
-    gameName = re.sub( r"the", '', gameName )
-    gameName = re.sub( r"[^\w\d\s]", '', gameName )
-    gameName = re.sub( r"\s+", ' ', gameName )
+    gameName = re.sub( r"(\(|\[)[^\(\)\[\]]*(\)|\])" , ''  , gameName )
+    gameName = re.sub( r"the"                        , ''  , gameName )
+    gameName = re.sub( r"[^\w\d\s]"                  , ''  , gameName )
+    gameName = re.sub( r"\s+"                        , ' ' , gameName )
     gameName = gameName.strip()
 
     return gameName
@@ -41,17 +34,23 @@ def stripGameName( gameName ):
 def parseFileName( fileName ):
     releaseNum = None
 
-    fileName = re.sub( r"^.*(/|:)", '', fileName )
     fileName = fileName.lower()
-    fileName = re.sub( "\.nds$", '', fileName )
-    fileName = re.sub( "_", ' ', fileName )
+    fileName = re.sub( r"^.*(/|:)" , ''  , fileName )
+    fileName = re.sub( "\.nds$"    , ''  , fileName )
+    fileName = re.sub( "_"         , ' ' , fileName )
 
     # TODO: add release location parser
-    releaseNum_pattern = re.compile( r"(\[|\()?(\d+)(\]|\))?\s*-?(.*)" )
-    matchReleaseNum = releaseNum_pattern.match( fileName )
+    #releaseNum_pattern = re.compile( r"(\[|\()?(\d+)(\]|\))?\s*-?(.*)" )
+    releaseNum_pattern = re.compile( r"((\[|\()?(\d+)(\]|\))|(\d+)\s*-\s*)\s*(.*)" )
+    matchReleaseNum    = releaseNum_pattern.match( fileName )
+
     if matchReleaseNum:
-        releaseNum = int( matchReleaseNum.group( 2 ) )
-        fileName = matchReleaseNum.group( 4 )
+        if matchReleaseNum.group( 3 ):
+            releaseNum = int( matchReleaseNum.group( 3 ) )
+            fileName   = matchReleaseNum.group( 6 )
+        elif matchReleaseNum.group( 5 ):
+            releaseNum = int( matchReleaseNum.group( 5 ) )
+            fileName   = matchReleaseNum.group( 6 )
 
     fileName = stripGameName( fileName )
 

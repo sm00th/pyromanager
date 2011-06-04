@@ -27,9 +27,8 @@ class db_test( unittest.TestCase ):
             "../more/depth/(3686) - Zubo (USA) (En,Fr,Es).nds"                                             : [ 3686, "zubo" ],
             "[3686] Zubo.nds"                                                                              : [ 3686, "zubo" ],
             "Shin Megami Tensei - Strange Journey.nds"                                                     : [ None, "shin megami tensei strange journey" ],
-            "1514_The_Legend_of_Zelda_Phantom_Hourglass.nds"                                               : [ 1514, "legend of zelda phantom hourglass" ],
-            # hopefully - thats a very rare case of false parsing
-            "9 Hours 9 Persons 9 Doors.nds"                                                                : [ 9, "hours 9 persons 9 doors" ],
+            "1514_-_The_Legend_of_Zelda_Phantom_Hourglass.nds"                                               : [ 1514, "legend of zelda phantom hourglass" ],
+            "9 Hours 9 Persons 9 Doors.nds"                                                                : [ None, "9 hours 9 persons 9 doors" ],
             "123 - 9 Hours, 9 Persons, 9 Doors.nds"                                                        : [ 123, "9 hours 9 persons 9 doors" ],
             "3776 - Broken Sword - Shadow of the Templars - The Director's Cut (USA) (En,Fr,De,Es,It).nds" : [ 3776, "broken sword shadow of templars directors cut" ],
         }

@@ -2,12 +2,7 @@ import pyNDSrom
 import cmdln
 import os
 import sys
-
-config = {
-        'confDir' : os.path.expanduser( "~/.pyROManager" ),
-        'dbFile'  : 'pyro.db',
-        'xmlDB'   : 'ADVANsCEne_NDS_S.xml',
-}
+from cfg import config
 
 def listQuestion( msg, choiceList, default=None ):
     print "%s [%s](Default: %s)" % ( msg, '/'.join( [ str(x) for x in choiceList ] ), default ),
@@ -61,6 +56,8 @@ class cli( cmdln.Cmdln ):
             help="do not scan subdirs" )
     @cmdln.option( "--non-interactive", action="store_true",
             help="do not ask any questions(probably a bad idea)" )
+    @cmdln.option( "-u", "--update", action="store_true",
+            help="do not rescan files already in db" )
     def do_import( self, subcmd, opts, path ):
         """${cmd_name}: import roms from dir into database
         

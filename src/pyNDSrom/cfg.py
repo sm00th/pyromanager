@@ -5,7 +5,8 @@ __config__ = {
     'confDir'    : os.path.expanduser( "~/.pyROManager" ),
     'dbFile'     : 'pyro.db',
     'xmlDB'      : 'ADVANsCEne_NDS_S.xml',
-    'extensions' : [ 'nds', 'zip', '7z', 'rar' ],
+    'extensions' : [ 'nds' ],
+    #'extensions' : [ 'nds', 'zip', '7z', 'rar' ], Lets do nds alone first
     'location'   : {
         0  : ( 'Europe'      , 'EUR'   , 'E' ),
         1  : ( 'USA'         , 'USA'   , 'U' ),

@@ -1,8 +1,9 @@
 '''Database manipulation module'''
-import sqlite3
-from xml.dom import minidom
 import re
-from cfg import __config__ as config
+import sqlite3
+from pyNDSrom.file import strip_name
+from xml.dom import minidom
+from pyNDSrom.cfg import __config__ as config
 
 def encode_location( name ):
     '''Translates location name to int'''
@@ -23,47 +24,6 @@ def decode_location( location_id, return_type=1 ):
         pass
 
     return result
-
-def strip_name( name ):
-    '''Strip unnecessary information'''
-    name = re.sub( r"(\(|\[)[^\(\)\[\]]*(\)|\])" , ''  , name )
-    name = re.sub( r"the"                        , ''  , name )
-    name = re.sub( r"[^\w\d\s]"                  , ''  , name )
-    name = re.sub( r"\s+"                        , ' ' , name )
-    name = name.strip()
-
-    return name
-
-def parse_filename( filename ):
-    '''Parse rom name'''
-    release_number = None
-
-    filename = filename.lower()
-    filename = re.sub( r"^.*(/|:)" , ''  , filename )
-    filename = re.sub( "\.[^.]+$"  , ''  , filename )
-    filename = re.sub( "_"         , ' ' , filename )
-
-    match = re.match(
-        r"((\[|\()?(\d+)(\]|\))|(\d+)\s*-\s*)\s*(.*)",
-        filename
-    )
-
-    if match:
-        if match.group( 3 ):
-            release_number = int( match.group( 3 ) )
-            filename       = match.group( 6 )
-        elif match.group( 5 ):
-            release_number = int( match.group( 5 ) )
-            filename       = match.group( 6 )
-
-    location = None
-    for tag in re.findall( r"(\(|\[)(\w+)(\)|\])", filename ):
-        if not location:
-            location = encode_location( tag[1] )
-
-    filename = strip_name( filename )
-
-    return [ release_number, filename, location ]
 
 def node_text( node_list ):
     '''Extract text from node'''
@@ -114,10 +74,9 @@ class SQLdb():
         # TODO: exception handling
         cursor = self.database.cursor()
         for data in provider.rom_list:
-            normalized_name = strip_name( data[1] )
             cursor.execute(
                 'INSERT OR REPLACE INTO known_roms VALUES(?,?,?,?,?,?,?)',
-                data + ( normalized_name.lower(), )
+                data
             )
         self.database.commit()
         cursor.close()
@@ -182,10 +141,12 @@ class SQLdb():
 
     def rom_info( self, release_number ):
         '''Returns rom info for rom specified by release number'''
+# TODO: replace with rom object
         rom_data = None
         cursor = self.database.cursor()
         returned = cursor.execute(
-            'SELECT release_id,name,publisher,released_by,location ' + \
+            'SELECT release_id, name, publisher, released_by, location, ' + \
+            'normalized_name ' + \
             'FROM known_roms WHERE release_id=?',
             ( release_number, )
         ).fetchone()
@@ -195,17 +156,17 @@ class SQLdb():
 
         return rom_data
 
-    def add_local( self, path, release_number ):
+    def add_local( self, dataset ):
         '''Add local rom to db'''
-        normalized_name = parse_filename( path )[1]
         cursor = self.database.cursor()
         cursor.execute(
             'INSERT OR REPLACE INTO local_roms ' + \
-            '( release_id, path_to_file, normalized_name ) ' + \
-            'values ( ?, ?, ? )',
-            ( release_number, path, normalized_name )
+            '( release_id, path_to_file, normalized_name, size ) ' + \
+            'values ( ?, ?, ?, ? )',
+            dataset
         )
         self.database.commit()
+        return 1
 
 class AdvansceneXML():
     '''Advanscene xml parser'''
@@ -226,13 +187,19 @@ class AdvansceneXML():
 
     def parse_node( self, node ):
         '''Parse node'''
-        title          = node_text( node.getElementsByTagName( 'title' )[0].childNodes )
-        publisher      = node_text( node.getElementsByTagName( 'publisher' )[0].childNodes )
-        released_by    = node_text( node.getElementsByTagName( 'sourceRom' )[0].childNodes )
-        location       = node_text( node.getElementsByTagName( 'location' )[0].childNodes )
-        release_number = int( node_text( node.getElementsByTagName( 'releaseNumber' )[0].childNodes ) )
-        crc32          = self.get_crc( node )
-        return ( release_number, title, crc32, publisher, released_by, location )
+        title = node_text( node.getElementsByTagName( 'title' )[0].childNodes )
+        publisher = node_text(
+                node.getElementsByTagName( 'publisher' )[0].childNodes )
+        released_by = node_text(
+                node.getElementsByTagName( 'sourceRom' )[0].childNodes )
+        location = node_text(
+                node.getElementsByTagName( 'location' )[0].childNodes )
+        release_number = int( node_text(
+                node.getElementsByTagName( 'releaseNumber' )[0].childNodes ) )
+        crc32 = self.get_crc( node )
+        normalized_name = strip_name( title.lower() )
+        return ( release_number, title, crc32, publisher, released_by,
+                location, normalized_name )
 
     def get_crc( self, node ):
         '''Returns crc from rom node'''

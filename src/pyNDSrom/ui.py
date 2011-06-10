@@ -1,6 +1,5 @@
 '''User interface routines for pyROManager'''
 import cmdln
-import pyNDSrom.db
 import pyNDSrom.file
 from cfg import __config__ as config
 
@@ -9,7 +8,7 @@ def list_question( msg, choice_list, default=None ):
     print "%s [%s](Default: %s)" % ( 
         msg, '/'.join( [ str(x) for x in choice_list ] ),
         default
-    )
+    ),
     reply = raw_input().lower()
     if not reply:
         reply = default
@@ -64,6 +63,7 @@ class Cli( cmdln.Cmdln ):
             help = "do not scan subdirs" )
     @cmdln.option( "--non-interactive", action = "store_true",
             help = "do not ask any questions(probably a bad idea)" )
+    # TODO: update must be by default
     @cmdln.option( "-u", "--update", action = "store_true",
             help = "do not rescan files already in db" )
     def do_import( self, subcmd, opts, path ):
@@ -108,7 +108,8 @@ class Cli( cmdln.Cmdln ):
 
         xml = pyNDSrom.db.AdvansceneXML( '%s/%s' % ( config['confDir'],
             config['xmlDB'] ) )
-        db = pyNDSrom.db.SQLdb( '%s/%s' % ( config['confDir'], config['dbFile'] ) )
-        db.import_known( xml )
+        database = pyNDSrom.db.SQLdb( '%s/%s' % ( config['confDir'], 
+            config['dbFile'] ) )
+        database.import_known( xml )
         print "subcmd: %s, opts: %s" % ( subcmd, opts )
 

@@ -8,7 +8,7 @@ def extension( file_name ):
     result = ''
     match  = re.match( r".*\.([^.]+)$", file_name )
     if match:
-        result = match.group( 1 )
+        result = match.group( 1 ).lower()
 
     return result
 

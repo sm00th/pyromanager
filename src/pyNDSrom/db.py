@@ -113,7 +113,7 @@ class SQLdb():
 
         # TODO: exception handling
         cursor = self.database.cursor()
-        for data in provider.rom_list():
+        for data in provider.rom_list:
             normalized_name = strip_name( data[1] )
             cursor.execute(
                 'INSERT OR REPLACE INTO known_roms VALUES(?,?,?,?,?,?,?)',
@@ -210,7 +210,7 @@ class SQLdb():
 class AdvansceneXML():
     '''Advanscene xml parser'''
     def __init__( self, path ):
-        self.path = path
+        self.path     = path
         self.rom_list = []
 
         self.parse()

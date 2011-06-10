@@ -1,6 +1,7 @@
 '''User interface routines for pyROManager'''
 import cmdln
-import pyNDSrom
+import pyNDSrom.db
+import pyNDSrom.file
 from cfg import __config__ as config
 
 def list_question( msg, choice_list, default=None ):
@@ -49,7 +50,6 @@ def question_yn( msg, default="y" ):
     return choices[reply][1]
 
 class Cli( cmdln.Cmdln ):
-
     def get_optparser( self ):
         parser = cmdln.Cmdln.get_optparser( self )
         parser.add_option(
@@ -73,9 +73,10 @@ class Cli( cmdln.Cmdln ):
         ${cmd_option_list}
         """
 
-        scanner = pyNDSrom.rom.scanner( "%s/%s" % ( config['confDir'],
-            config['dbFile'] ) )
-        scanner.scanIntoDB( path )
+        #scanner = pyNDSrom.rom.scanner( "%s/%s" % ( config['confDir'],
+            #config['dbFile'] ) )
+        #scanner.scanIntoDB( path )
+        pyNDSrom.file.scan( path )
         print "subcmd: %s, opts: %s" % ( subcmd, opts )
 
     @cmdln.alias( "l", "ls" )
@@ -108,6 +109,6 @@ class Cli( cmdln.Cmdln ):
         xml = pyNDSrom.db.AdvansceneXML( '%s/%s' % ( config['confDir'],
             config['xmlDB'] ) )
         db = pyNDSrom.db.SQLdb( '%s/%s' % ( config['confDir'], config['dbFile'] ) )
-        db.importKnownFrom( xml )
+        db.import_known( xml )
         print "subcmd: %s, opts: %s" % ( subcmd, opts )
 

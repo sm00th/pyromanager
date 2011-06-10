@@ -4,7 +4,7 @@ import pyNDSrom.file
 
 class file_test( unittest.TestCase ):
     def test_extension( self ):
-        self.assertEqual( pyNDSrom.file.extension( '../path/to/somefile.wtf' ),
+        self.assertEqual( pyNDSrom.file.extension( '../path/to/somefile.wTf' ),
                 'wtf' )
 
     def test_fileList( self ):
@@ -27,9 +27,9 @@ class file_test( unittest.TestCase ):
 class db_test( unittest.TestCase ):
     def testParse( self ):
         db = pyNDSrom.db.AdvansceneXML( '../tests/nds.xml' )
-        self.assertEqual( db.filePath           , '../tests/nds.xml' )
-        self.assertEqual( len( db.gameList )    , 7 )
-        self.assertEqual( len( db.gameList[0] ) , 6 )
+        self.assertEqual( db.path               , '../tests/nds.xml' )
+        self.assertEqual( len( db.rom_list )    , 7 )
+        self.assertEqual( len( db.rom_list[0] ) , 6 )
 
     def testFileNameParser( self ):
         testNames = {

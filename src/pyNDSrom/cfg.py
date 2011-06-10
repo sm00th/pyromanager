@@ -1,10 +1,12 @@
+'''Configuration for pyNDSrom'''
 import os
 
-config = {
-    'confDir' : os.path.expanduser( "~/.pyROManager" ),
-    'dbFile'  : 'pyro.db',
-    'xmlDB'   : 'ADVANsCEne_NDS_S.xml',
-    'location' : {
+__config__ = {
+    'confDir'    : os.path.expanduser( "~/.pyROManager" ),
+    'dbFile'     : 'pyro.db',
+    'xmlDB'      : 'ADVANsCEne_NDS_S.xml',
+    'extensions' : [ 'nds', 'zip', '7z', 'rar' ],
+    'location'   : {
         0  : ( 'Europe'      , 'EUR'   , 'E' ),
         1  : ( 'USA'         , 'USA'   , 'U' ),
         2  : ( 'Germany'     , 'GER'   , 'G' ),

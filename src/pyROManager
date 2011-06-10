@@ -3,5 +3,5 @@ import sys
 from pyNDSrom import ui
 
 if __name__ == '__main__':
-    cli = ui.cli()
-    sys.exit( cli.main() )
+    __cli__ = ui.Cli()
+    sys.exit( __cli__.main() )

@@ -1,22 +1,32 @@
 import unittest
-import pyNDSrom
+import pyNDSrom.db
+import pyNDSrom.file
 
-class NDSFile_test( unittest.TestCase ):
-    def testRead( self ):
-        testFile = pyNDSrom.NDSFile( '../tests/TinyFB.nds' )
-        self.assertEqual( testFile.filePath   , '../tests/TinyFB.nds' )
-        self.assertEqual( testFile.gameTitle  , 'NDS.TinyFB' )
-        self.assertEqual( testFile.gameCode   , '####' )
-        self.assertEqual( testFile.makerCode  , 'N0' )
-        self.assertEqual( testFile.unitCode   , 0 )
-        self.assertEqual( testFile.encryption , 0 )
-        self.assertEqual( testFile.capacity   , 16 )
-        self.assertEqual( testFile.crc32      , 0x1ece1d01 )
+class file_test( unittest.TestCase ):
+    def test_extension( self ):
+        self.assertEqual( pyNDSrom.file.extension( '../path/to/somefile.wtf' ),
+                'wtf' )
+
+    def test_fileList( self ):
+        self.assertEqual( len( pyNDSrom.file.search( '../' ) ), 3 )
+
+    def test_nds( self ):
+        testFile = pyNDSrom.file.NDS( '../tests/TinyFB.nds' )
+        self.assertEqual( testFile.file_path   , '../tests/TinyFB.nds' )
+
+        self.assertEqual( testFile.rom['title'] , 'NDS.TinyFB' )
+        self.assertEqual( testFile.rom['code']  , '####' )
+        self.assertEqual( testFile.rom['maker'] , 'N0' )
+        self.assertEqual( testFile.rom['crc32'] , 0x1ece1d01 )
+
+        self.assertEqual( testFile.hardware['unit_code']  , 0 )
+        self.assertEqual( testFile.hardware['encryption'] , 0 )
+        self.assertEqual( testFile.hardware['capacity']   , 16 )
 
 
 class db_test( unittest.TestCase ):
     def testParse( self ):
-        db = pyNDSrom.AdvansceneXML( '../tests/nds.xml' )
+        db = pyNDSrom.db.AdvansceneXML( '../tests/nds.xml' )
         self.assertEqual( db.filePath           , '../tests/nds.xml' )
         self.assertEqual( len( db.gameList )    , 7 )
         self.assertEqual( len( db.gameList[0] ) , 6 )
@@ -33,13 +43,13 @@ class db_test( unittest.TestCase ):
             "3776 - Broken Sword - Shadow of the Templars - The Director's Cut [USA] (En,Fr,De,Es,It).nds" : [ 3776, "broken sword shadow of templars directors cut", 1 ],
         }
         for( fileName, expectedResult ) in testNames.iteritems():
-            self.assertListEqual( pyNDSrom.parseFileName( fileName ), expectedResult )
+            self.assertListEqual( pyNDSrom.db.parse_filename( fileName ), expectedResult )
 
     #TODO: actually test something here
     def testSQLImport( self ):
-        db    = pyNDSrom.SQLdb( '../tests/sql' )
-        xmlDB = pyNDSrom.AdvansceneXML( '../tests/nds.xml' )
-        db.importKnownFrom( xmlDB )
+        db    = pyNDSrom.db.SQLdb( '../tests/sql' )
+        xmlDB = pyNDSrom.db.AdvansceneXML( '../tests/nds.xml' )
+        db.import_known( xmlDB )
 
 if __name__ == '__main__':
     unittest.main()

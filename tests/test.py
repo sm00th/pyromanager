@@ -1,6 +1,16 @@
 import unittest
 import pyNDSrom.db
 import pyNDSrom.file
+import pyNDSrom.rom
+
+class rom_test( unittest.TestCase ):
+    def test_norm_name( self ):
+        rom = pyNDSrom.rom.Rom()
+        self.assertEqual( rom.normalized_name, None )
+        rom.set_file_info( ( '/path/to/Epic_File_-_OMG', 1235 ) )
+        self.assertEqual( rom.normalized_name, 'epic file omg' )
+        rom.rom_info['normalized_name'] = 'hey'
+        self.assertEqual( rom.normalized_name, 'hey' )
 
 class file_test( unittest.TestCase ):
     def test_extension( self ):

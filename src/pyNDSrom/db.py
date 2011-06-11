@@ -1,7 +1,8 @@
 '''Database manipulation module'''
 import re
 import sqlite3
-from pyNDSrom.file import strip_name
+import pyNDSrom.rom
+import pyNDSrom.file
 from xml.dom import minidom
 from pyNDSrom.cfg import __config__ as config
 
@@ -142,7 +143,7 @@ class SQLdb():
     def rom_info( self, release_number ):
         '''Returns rom info for rom specified by release number'''
 # TODO: replace with rom object
-        rom_data = None
+        rom_data = pyNDSrom.rom.Rom()
         cursor = self.database.cursor()
         returned = cursor.execute(
             'SELECT release_id, name, publisher, released_by, location, ' + \
@@ -151,19 +152,19 @@ class SQLdb():
             ( release_number, )
         ).fetchone()
         if returned:
-            rom_data = returned
+            rom_data.set_rom_info( returned )
         cursor.close()
 
         return rom_data
 
-    def add_local( self, dataset ):
+    def add_local( self, rom_info ):
         '''Add local rom to db'''
         cursor = self.database.cursor()
         cursor.execute(
             'INSERT OR REPLACE INTO local_roms ' + \
             '( release_id, path_to_file, normalized_name, size ) ' + \
             'values ( ?, ?, ?, ? )',
-            dataset
+            rom_info.local_data()
         )
         self.database.commit()
         return 1
@@ -197,7 +198,7 @@ class AdvansceneXML():
         release_number = int( node_text(
                 node.getElementsByTagName( 'releaseNumber' )[0].childNodes ) )
         crc32 = self.get_crc( node )
-        normalized_name = strip_name( title.lower() )
+        normalized_name = pyNDSrom.file.strip_name( title.lower() )
         return ( release_number, title, crc32, publisher, released_by,
                 location, normalized_name )
 

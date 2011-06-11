@@ -107,8 +107,7 @@ class NDS:
         self.rom       = {}
         self.hardware  = {}
 
-        self.rom['normalized_name'] = None
-        self.rom['release_number']  = None
+        self.rom_info = None
 
         self.parse_file()
 
@@ -154,7 +153,7 @@ class NDS:
     def query_db( self ):
         '''Get info about nds file from database'''
         db_releaseid = None
-        if not ( self.rom['release_number'] and self.rom['normalized_name'] ):
+        if not self.rom_info:
             db_releaseid = self.database.search_crc( self.rom['crc32'] )
             if not db_releaseid:
                 ( release_number, rom_name, location ) = parse_filename(
@@ -178,10 +177,11 @@ class NDS:
                                     db_releaseid = n_releaseid_list[answer]
 
         if db_releaseid:
-            rom = self.database.rom_info( db_releaseid )
-            self.rom['release_number']  = db_releaseid
-            self.rom['normalized_name'] = rom[5]
+            self.rom_info = self.database.rom_info( db_releaseid )
+            self.rom_info.set_file_info( ( self.file_path, self.rom['size'] ) )
         else:
+            self.rom_info = pyNDSrom.rom.Rom( file_data = ( self.file_path,
+                self.rom['size'] ) )
             print "Wasn't able to identify %s" % ( self.file_path )
         return 1
 
@@ -190,22 +190,18 @@ class NDS:
         result = 0
         if type( db_releaseid ) == int:
             rom = self.database.rom_info( db_releaseid )
-            print "File '%s' was identified as %d - %s (%s) Released by: %s" % (
-                    re.sub( r"^.*(/|:)", '', self.file_path ),
-                    rom[0],
-                    rom[1],
-                    pyNDSrom.db.decode_location( rom[4] ),
-                    rom[3],
-                )
+            print "File '%s' was identified as %s" % (
+                    os.path.basename( self.file_path ),
+                    rom,
+            )
             result = pyNDSrom.ui.question_yn( "Is this correct?" )
         elif type( db_releaseid ) == list:
             print "File '%s' can be one of the following:" % ( 
-                    re.sub( r"^.*(/|:)", '', self.file_path ) )
+                    os.path.basename( self.file_path ) )
             index = 0
             for release_id in db_releaseid:
                 rom = self.database.rom_info( release_id )
-                print " %d. %d - %s (%s) Released by: %s" % ( index, rom[0],
-                        rom[1], pyNDSrom.db.decode_location( rom[4] ), rom[3] )
+                print " %d. %s" % ( index, rom )
                 index += 1
             result = pyNDSrom.ui.list_question( "Which one?",
                     range(index) + [None] )
@@ -215,11 +211,7 @@ class NDS:
     def db_data( self ):
         '''Data accepted by db.add_local method'''
         self.query_db()
-        return ( self.rom['release_number'],
-            self.rom['normalized_name'] or parse_filename( self.file_path)[1],
-            self.file_path,
-            self.rom['size']
-        ) 
+        return self.rom_info
 
 
 #elif re.search( "\.zip$", fullPath, flags = re.IGNORECASE ):

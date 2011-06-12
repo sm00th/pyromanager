@@ -1,5 +1,5 @@
 '''File operations'''
-import os, re
+import os, re, zipfile, subprocess
 import struct, binascii
 import pyNDSrom.db
 from sqlite3 import OperationalError
@@ -27,16 +27,6 @@ def search( path ):
             if ext in config['extensions']:
                 result.append( ( file_path, ext ) )
     return result
-
-def scan( path ):
-    '''Scan path for roms'''
-    database = pyNDSrom.db.SQLdb( "%s/%s" % ( config['confDir'],
-        config['dbFile'] ) )
-    for file_info in search( path ):
-        if file_info[1] == 'nds':
-            nds = NDS( file_info[0], database )
-            if nds.is_valid:
-                nds.add_to_db()
 
 def strip_name( name ):
     '''Strip unnecessary information'''
@@ -100,13 +90,40 @@ def capsize( cap ):
     '''Returns capacity size of original cartridge'''
     return pow( 2, 20 + cap ) / 8388608
 
+def scan( path ):
+    '''Scan path for roms'''
+    database = pyNDSrom.db.SQLdb( "%s/%s" % ( config['confDir'],
+        config['dbFile'] ) )
+    for file_info in search( path ):
+        # TODO: think about dict of constructors(??)
+        if not database.already_in_local( file_info[0] ):
+            try:
+                if file_info[1] == 'nds':
+                    rom_file = NDS( file_info[0], database )
+                elif file_info[1] == 'zip':
+                    rom_file = ZIP( file_info[0], database )
+                elif file_info[1] == '7z':
+                    rom_file = ZIP7( file_info[0], database )
+
+                if rom_file.is_valid:
+                        rom_file.add_to_db()
+            except zipfile.BadZipfile as exc:
+                print "Failed to process zip archive %s: %s" % ( file_info[0], exc )
+
 class NDS:
     ''' Reads and(maybe) writes the contents of .nds files '''
-    def __init__( self, file_path, database = None ):
+    def __init__( self, file_path, database = None, in_archive = None ):
         self.file_path = os.path.abspath( file_path )
         self.database  = database
         self.rom       = {}
         self.hardware  = {}
+
+        if in_archive:
+            self.real_path = '%s:%s' % ( in_archive,
+                    os.path.basename( file_path ) )
+        else:
+            self.real_path = self.file_path
+
 
         self.rom_info = None
 
@@ -181,12 +198,13 @@ class NDS:
 
         if db_releaseid:
             self.rom_info = self.database.rom_info( db_releaseid )
-            self.rom_info.set_file_info( ( self.file_path, self.rom['size'],
+            self.rom_info.set_file_info( ( self.real_path, self.rom['size'],
                 self.rom['crc32'] ) )
         else:
-            self.rom_info = pyNDSrom.rom.Rom( file_data = ( self.file_path,
+            self.rom_info = pyNDSrom.rom.Rom( file_data = ( self.real_path,
                 self.rom['size'], self.rom['crc32'] ) )
-            print "Wasn't able to identify %s" % ( self.file_path )
+
+            print "Wasn't able to identify %s" % ( self.real_path )
         return 1
 
     def confirm_file( self, db_releaseid ):
@@ -217,6 +235,102 @@ class NDS:
         '''Data accepted by db.add_local method'''
         self.query_db()
         return self.rom_info
+
+class ZIP:
+    '''Zip archive handler'''
+    def __init__( self, file_path, database = None ):
+        self.file_path = os.path.abspath( file_path )
+        self.database  = database
+        self.nds_list  = []
+
+        self.scan_files()
+
+    def is_valid( self ):
+        '''Check if archive contains any nds files'''
+        result = 0
+        if len( nds_list ):
+            result = 1
+        return result
+
+    def scan_files( self ):
+        '''Scan archive for nds files'''
+        archive = zipfile.ZipFile( self.file_path, 'r' )
+        for compressed in archive.namelist():
+            if re.search( "\.nds$", compressed, flags = re.IGNORECASE ):
+                self.nds_list.append( compressed )
+        archive.close()
+
+        return 1
+
+    def add_to_db( self ):
+        '''Add nds files from archive to database'''
+
+        archive = zipfile.ZipFile( self.file_path, 'r' )
+        for nds_filename in self.nds_list:
+            archive.extract( nds_filename, '/tmp/' )
+            temp_path = '/tmp/%s' % nds_filename
+            nds = NDS( temp_path, self.database, in_archive =
+                    self.file_path )
+            if nds.is_valid():
+                nds.add_to_db()
+            os.unlink( temp_path )
+
+        archive.close()
+        return 1
+
+class ZIP7:
+    '''7zip archive handler'''
+    def __init__( self, file_path, database = None ):
+        self.file_path = os.path.abspath( file_path )
+        self.database  = database
+        self.nds_list  = []
+
+        self.scan_files()
+
+    def is_valid( self ):
+        '''Check if archive contains any nds files'''
+        result = 0
+        if len( nds_list ):
+            result = 1
+        return result
+
+    def scan_files( self ):
+        '''Scan archive for nds files'''
+        list_archive = subprocess.Popen( [ '7z', 'l', self.file_path ],
+                stdout = subprocess.PIPE, stderr = subprocess.PIPE )
+
+        list_started   = 0
+        filename_start = 0
+        for line in list_archive.stdout.readlines():
+            line = line.rstrip()
+            if re.match( '-----', line ):
+                list_started ^= 1
+                filename_start = len( line.split( '  ' )[0] ) + 2
+            elif list_started:
+                filename = line[filename_start:]
+                if re.search( "\.nds$", filename, flags = re.IGNORECASE ):
+                    self.nds_list.append( filename )
+        list_archive.wait()
+
+        return 1
+
+    def add_to_db( self ):
+        '''Add nds files from archive to database'''
+
+        for nds_filename in self.nds_list:
+            decompress = subprocess.Popen( [ '7z', 'e', '-o/tmp',
+                self.file_path, nds_filename ], stdout = subprocess.PIPE,
+                stderr = subprocess.PIPE )
+            decompress.wait()
+            temp_path = '/tmp/%s' % nds_filename
+            nds = NDS( temp_path, self.database, in_archive =
+                    self.file_path )
+            if nds.is_valid():
+                nds.add_to_db()
+            os.unlink( temp_path )
+
+        return 1
+
 
 
 #elif re.search( "\.zip$", fullPath, flags = re.IGNORECASE ):

@@ -238,6 +238,19 @@ class SQLdb():
         cursor.close()
         return result
 
+    def already_in_local( self, path ):
+        result = 0
+        cursor = self.database.cursor()
+        ret = cursor.execute(
+            'SELECT id FROM local_roms ' + \
+            'WHERE path_to_file LIKE ?',
+            ( '%s%%' % path, )
+        ).fetchall()
+        if ret:
+            result = 1
+        cursor.close()
+        return result
+
 class AdvansceneXML():
     '''Advanscene xml parser'''
     def __init__( self, path ):

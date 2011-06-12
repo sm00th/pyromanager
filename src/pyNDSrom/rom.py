@@ -78,7 +78,8 @@ class Rom:
 
     def remove( self, database = None ):
         try:
-            os.unlink( self.file_info['path'] )
+            path = re.sub( r":.*$", '', self.file_info['path'] )
+            os.unlink( path )
         except OSError as exc:
             print "Failed to remove file: %s" % ( exc )
 

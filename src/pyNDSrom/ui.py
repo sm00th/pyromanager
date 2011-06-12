@@ -79,8 +79,6 @@ class Cli( cmdln.Cmdln ):
         print "subcmd: %s, opts: %s" % ( subcmd, opts )
 
     @cmdln.alias( "l", "ls" )
-    @cmdln.option( "-d", "--duplicates", action = "store_true",
-            help = "show duplicate entries only" )
     @cmdln.option( "-k", "--known", action = "store_true",
             help = "query known roms, not the local ones" )
     def do_list( self, subcmd, opts, *terms ):
@@ -99,6 +97,31 @@ class Cli( cmdln.Cmdln ):
                 print rom
         print "subcmd: %s, opts: %s" % ( subcmd, opts )
 
+    def do_rmdupes( self, subcmd, opts ):
+        """${cmd_name}: remove duplicate roms from disk
+
+        ${cmd_usage}
+        ${cmd_option_list}
+        """
+        database = pyNDSrom.db.SQLdb( '%s/%s' % ( config['confDir'],
+            config['dbFile'] ) )
+        for crc32 in database.find_dupes():
+            rom_list = database.local_roms_crc32( crc32[1] )
+            print "%d duplicates found for %s" % ( crc32[0], rom_list[0] )
+            print "Delete all but one(None - let all be)"
+            index = 0
+            for rom in rom_list:
+                print " %d. %s" % ( index, rom.file_info['path'] )
+                index += 1
+            answer = pyNDSrom.ui.list_question( "Which one?",
+                    range( index ) + [None] )
+            if answer != None:
+                del rom_list[answer]
+                for rom in rom_list:
+                    rom.remove( database )
+
+            print
+
     @cmdln.option( "-x", "--xml",
             help = "specify xml file to updatefrom" )
     def do_updatedb( self, subcmd, opts ):
@@ -110,7 +133,7 @@ class Cli( cmdln.Cmdln ):
 
         xml = pyNDSrom.db.AdvansceneXML( '%s/%s' % ( config['confDir'],
             config['xmlDB'] ) )
-        database = pyNDSrom.db.SQLdb( '%s/%s' % ( config['confDir'], 
+        database = pyNDSrom.db.SQLdb( '%s/%s' % ( config['confDir'],
             config['dbFile'] ) )
         database.import_known( xml )
         print "subcmd: %s, opts: %s" % ( subcmd, opts )

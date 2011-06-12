@@ -2,6 +2,7 @@
 import os, re
 import struct, binascii
 import pyNDSrom.db
+from sqlite3 import OperationalError
 from pyNDSrom.cfg import __config__ as config
 
 def extension( file_name ):
@@ -145,8 +146,10 @@ class NDS:
 
     def add_to_db( self ):
         '''Add current nds file to database'''
-        if self.database:
+        try:
             self.database.add_local( self.db_data() )
+        except OperationalError as exc:
+            print "Failed to add %s: %s" % ( self.rom_info, exc )
 
         return 1
 
@@ -154,7 +157,7 @@ class NDS:
         '''Get info about nds file from database'''
         db_releaseid = None
         if not self.rom_info:
-            db_releaseid = self.database.search_crc( self.rom['crc32'] )
+            db_releaseid = self.database.search_known_crc( self.rom['crc32'] )
             if not db_releaseid:
                 ( release_number, rom_name, location ) = parse_filename(
                         self.file_path )
@@ -173,15 +176,16 @@ class NDS:
                                 db_releaseid = n_releaseid_list[0]
                             else:
                                 answer = self.confirm_file( n_releaseid_list )
-                                if answer:
+                                if answer != None:
                                     db_releaseid = n_releaseid_list[answer]
 
         if db_releaseid:
             self.rom_info = self.database.rom_info( db_releaseid )
-            self.rom_info.set_file_info( ( self.file_path, self.rom['size'] ) )
+            self.rom_info.set_file_info( ( self.file_path, self.rom['size'],
+                self.rom['crc32'] ) )
         else:
             self.rom_info = pyNDSrom.rom.Rom( file_data = ( self.file_path,
-                self.rom['size'] ) )
+                self.rom['size'], self.rom['crc32'] ) )
             print "Wasn't able to identify %s" % ( self.file_path )
         return 1
 
@@ -205,6 +209,7 @@ class NDS:
                 index += 1
             result = pyNDSrom.ui.list_question( "Which one?",
                     range(index) + [None] )
+        print
 
         return result
 

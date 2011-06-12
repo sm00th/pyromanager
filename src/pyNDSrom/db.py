@@ -63,6 +63,7 @@ class SQLdb():
             'path_to_file TEXT,' + \
             'normalized_name TEXT,' + \
             'size NUMERIC,' + \
+            'crc32 NUMERIC,' + \
             'UNIQUE( path_to_file ) ON CONFLICT REPLACE);'
         )
         self.database.commit()
@@ -83,7 +84,7 @@ class SQLdb():
         cursor.close()
         return 1
 
-    def search_crc( self, crc32 ):
+    def search_known_crc( self, crc32 ):
         '''Search known roms by crc32 value'''
         release_number = None
         cursor = self.database.cursor()
@@ -148,21 +149,53 @@ class SQLdb():
         cursor     = self.database.cursor()
         normalized_name = '%' + re.sub( r"\s", '%', name ) + '%'
         returned = cursor.execute(
+            'SELECT release_id, path_to_file, size, crc32 ' + \
+            'FROM local_roms ' + \
+            'WHERE normalized_name LIKE ? ' + \
+            'ORDER BY release_id',
+            ( normalized_name, ) 
+        ).fetchall()
+        if returned:
+            for ( release_id, path, size, crc32 ) in returned:
+                rom = pyNDSrom.rom.Rom()
+                if release_id:
+                    rom = self.rom_info( release_id )
+                rom.set_file_info( ( path, size, crc32 ) )
+                result.append( rom )
+        cursor.close()
+
+        return result
+
+# TODO: refactor those search functions
+    def local_roms_crc32( self, crc32 ):
+        '''Search local roms by crc32'''
+
+        returned = None
+        result   = []
+        cursor   = self.database.cursor()
+        returned = cursor.execute(
             'SELECT release_id, path_to_file, size ' + \
             'FROM local_roms ' + \
-            'WHERE normalized_name LIKE ?', 
-            ( normalized_name, ) 
+            'WHERE crc32=? ',
+            ( crc32, ) 
         ).fetchall()
         if returned:
             for ( release_id, path, size ) in returned:
                 rom = pyNDSrom.rom.Rom()
                 if release_id:
                     rom = self.rom_info( release_id )
-                rom.set_file_info( ( path, size ) )
+                rom.set_file_info( ( path, size, crc32 ) )
                 result.append( rom )
         cursor.close()
 
         return result
+
+    def remove_local( self, path ):
+        cursor = self.database.cursor()
+        cursor.execute( 'DELETE from local_roms where path_to_file=?', (path, ) )
+        self.database.commit()
+        cursor.close()
+        return 1
 
     def rom_info( self, release_number ):
         '''Returns rom info for rom specified by release number'''
@@ -185,12 +218,25 @@ class SQLdb():
         cursor = self.database.cursor()
         cursor.execute(
             'INSERT OR REPLACE INTO local_roms ' + \
-            '( release_id, path_to_file, normalized_name, size ) ' + \
-            'values ( ?, ?, ?, ? )',
+            '( release_id, path_to_file, normalized_name, size, crc32 ) ' + \
+            'values ( ?, ?, ?, ?, ? )',
             rom_info.local_data()
         )
         self.database.commit()
         return 1
+
+    def find_dupes( self ):
+        '''Search for duplicate roms'''
+        result = []
+        cursor = self.database.cursor()
+        dupes = cursor.execute(
+            'SELECT COUNT(*) as entries, crc32 FROM ' + \
+            'local_roms GROUP BY crc32 HAVING entries > 1'
+        ).fetchall()
+        if dupes:
+            result = dupes
+        cursor.close()
+        return result
 
 class AdvansceneXML():
     '''Advanscene xml parser'''

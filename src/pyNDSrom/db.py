@@ -97,7 +97,7 @@ class SQLdb():
 
         return release_number
 
-    def search_relnum( self, release_id ):
+    def search_known_relnum( self, release_id ):
         '''Search known roms by release number'''
         release_number = None
         cursor = self.database.cursor()
@@ -113,7 +113,7 @@ class SQLdb():
 
         return release_number
 
-    def search_name( self, name, location=None ):
+    def search_known_name( self, name, location=None ):
         '''Search known roms by name'''
         result = []
 
@@ -140,9 +140,32 @@ class SQLdb():
 
         return result
 
+    def local_roms_name( self, name ):
+        '''Search local roms by name'''
+        result = []
+
+        returned     = None
+        cursor     = self.database.cursor()
+        normalized_name = '%' + re.sub( r"\s", '%', name ) + '%'
+        returned = cursor.execute(
+            'SELECT release_id, path_to_file, size ' + \
+            'FROM local_roms ' + \
+            'WHERE normalized_name LIKE ?', 
+            ( normalized_name, ) 
+        ).fetchall()
+        if returned:
+            for ( release_id, path, size ) in returned:
+                rom = pyNDSrom.rom.Rom()
+                if release_id:
+                    rom = self.rom_info( release_id )
+                rom.set_file_info( ( path, size ) )
+                result.append( rom )
+        cursor.close()
+
+        return result
+
     def rom_info( self, release_number ):
         '''Returns rom info for rom specified by release number'''
-# TODO: replace with rom object
         rom_data = pyNDSrom.rom.Rom()
         cursor = self.database.cursor()
         returned = cursor.execute(

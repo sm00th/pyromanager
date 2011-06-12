@@ -158,8 +158,8 @@ class NDS:
             if not db_releaseid:
                 ( release_number, rom_name, location ) = parse_filename(
                         self.file_path )
-                r_releaseid      = self.database.search_relnum( release_number )
-                n_releaseid_list = self.database.search_name( rom_name,
+                r_releaseid      = self.database.search_known_relnum( release_number )
+                n_releaseid_list = self.database.search_known_name( rom_name,
                         location )
                 if r_releaseid in n_releaseid_list:
                     db_releaseid = r_releaseid

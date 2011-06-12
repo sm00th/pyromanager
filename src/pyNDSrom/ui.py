@@ -24,7 +24,6 @@ def list_question( msg, choice_list, default=None ):
 
     return reply
 
-
 def question_yn( msg, default="y" ):
     '''Yes/No question'''
     choices = {
@@ -90,11 +89,14 @@ class Cli( cmdln.Cmdln ):
         ${cmd_usage}
         ${cmd_option_list}
         """
-        if terms:
-            for term in terms:
-                print "searching for %s..." % term
-        else:
-            print "list errything"
+        database = pyNDSrom.db.SQLdb( '%s/%s' % ( config['confDir'], 
+            config['dbFile'] ) )
+        if not terms:
+            terms = [ '%' ]
+        for term in terms:
+            print "searching for %s..." % term
+            for rom in database.local_roms_name( term ):
+                print rom
         print "subcmd: %s, opts: %s" % ( subcmd, opts )
 
     @cmdln.option( "-x", "--xml",
@@ -112,4 +114,3 @@ class Cli( cmdln.Cmdln ):
             config['dbFile'] ) )
         database.import_known( xml )
         print "subcmd: %s, opts: %s" % ( subcmd, opts )
-

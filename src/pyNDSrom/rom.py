@@ -66,10 +66,21 @@ class Rom:
         }
         return 1,
 
-    def __str__( self ):
-        rom_string = "%s - %s (%s)" % (
-            self.rom_info['release_number'], self.rom_info['name'],
-                self.rom_info['region'] )
+    def size_mb( self ):
+        result = 'Unknown'
         if self.file_info['size']:
-            rom_string += ' Size: %d' % self.file_info['size']
+            result = "%.2fM" % ( self.file_info['size'] / 1048576.0 )
+        return result
+
+    def __str__( self ):
+        rom_string = ''
+        if self.rom_info['release_number'] or self.rom_info['name']:
+            rom_string = "%4s - %-50s (%s)" % (
+                self.rom_info['release_number'], self.rom_info['name'],
+                    self.rom_info['region'] )
+        else:
+            rom_string = '%-50s( %s )' % ( self.normalized_name,
+                    self.file_info['path'] )
+        if self.file_info['size']:
+            rom_string += ' Size: %s' % self.size_mb()
         return rom_string

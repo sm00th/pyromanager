@@ -103,10 +103,13 @@ def scan( path, opts ):
                     rom_file = NDS( file_info[0], database )
                 elif file_info[1] == 'zip':
                     rom_file = ZIP( file_info[0], database )
+                    rom_file.scan_files()
                 elif file_info[1] == '7z':
                     rom_file = ZIP7( file_info[0], database )
+                    rom_file.scan_files()
                 elif file_info[1] == 'rar':
                     rom_file = RAR( file_info[0], database )
+                    rom_file.scan_files()
 
                 if rom_file.is_valid:
                     rom_file.add_to_db()
@@ -249,8 +252,6 @@ class Archive:
         self.tmp_dir   = '/tmp/'
         self.nds_list  = []
 
-        self.scan_files()
-
     def is_valid( self ):
         '''Check if archive contains any nds files'''
         result = 0
@@ -258,14 +259,27 @@ class Archive:
             result = 1
         return result
 
-    def process_nds( self, nds_filename ):
+    def process_nds( self, nds_path ):
         '''Add nds file to database'''
-        temp_path = '%s/%s' % ( self.tmp_dir, nds_filename )
-        nds = NDS( temp_path, self.database, in_archive =
+        nds = NDS( nds_path, self.database, in_archive =
                 self.file_path )
         if nds.is_valid():
             nds.add_to_db()
-        return temp_path
+        return 1
+
+    def extract( self, archive_file, path ):
+        '''Extract specified file to path'''
+        return "%s/%s" % ( path, archive_file )
+
+    def add_to_db( self ):
+        '''Add nds files from archive to database'''
+
+        for nds_filename in self.nds_list:
+            nds_path = self.extract( nds_filename, self.tmp_dir )
+            self.process_nds( nds_path )
+            os.unlink( nds_path )
+
+        return 1
 
 class ZIP( Archive ):
     '''Zip archive handler'''
@@ -279,17 +293,12 @@ class ZIP( Archive ):
 
         return 1
 
-    def add_to_db( self ):
-        '''Add nds files from archive to database'''
-
+    def extract( self, archive_file, path ):
+        '''Extract specified file to path'''
         archive = zipfile.ZipFile( self.file_path, 'r' )
-        for nds_filename in self.nds_list:
-            archive.extract( nds_filename, self.tmp_dir )
-            temp_path = self.process_nds( nds_filename )
-            os.unlink( temp_path )
-
+        archive.extract( archive_file, path )
         archive.close()
-        return 1
+        return "%s/%s" % ( path, archive_file )
 
 class ZIP7( Archive ):
     '''7zip archive handler'''
@@ -313,18 +322,13 @@ class ZIP7( Archive ):
 
         return 1
 
-    def add_to_db( self ):
-        '''Add nds files from archive to database'''
-
-        for nds_filename in self.nds_list:
-            decompress = subprocess.Popen( [ '7z', 'e', '-o%s' % self.tmp_dir,
-                self.file_path, nds_filename ], stdout = subprocess.PIPE,
-                stderr = subprocess.PIPE )
-            decompress.wait()
-            temp_path = self.process_nds( nds_filename )
-            os.unlink( temp_path )
-
-        return 1
+    def extract( self, archive_file, path ):
+        '''Extract specified file to path'''
+        decompress = subprocess.Popen( [ '7z', 'e', '-o%s' % path,
+            self.file_path, archive_file ], stdout = subprocess.PIPE,
+            stderr = subprocess.PIPE )
+        decompress.wait()
+        return "%s/%s" % ( path, archive_file )
 
 class RAR( Archive ):
     '''Rar archive handler'''
@@ -340,15 +344,10 @@ class RAR( Archive ):
 
         return 1
 
-    def add_to_db( self ):
-        '''Add nds files from archive to database'''
-
-        for nds_filename in self.nds_list:
-            decompress = subprocess.Popen( [ 'unrar', 'x', self.file_path, 
-                nds_filename, self.tmp_dir ], stdout = subprocess.PIPE,
-                stderr = subprocess.PIPE )
-            decompress.wait()
-            temp_path = self.process_nds( nds_filename )
-            os.unlink( temp_path )
-
-        return 1
+    def extract( self, archive_file, path ):
+        '''Extract specified file to path'''
+        decompress = subprocess.Popen( [ 'unrar', 'x', self.file_path, 
+            archive_file, path ], stdout = subprocess.PIPE,
+            stderr = subprocess.PIPE )
+        decompress.wait()
+        return "%s/%s" % ( path, archive_file )

@@ -191,8 +191,10 @@ class SQLdb():
         return result
 
     def remove_local( self, path ):
+        '''Remove file from local_roms'''
         cursor = self.database.cursor()
-        cursor.execute( 'DELETE from local_roms where path_to_file=?', (path, ) )
+        cursor.execute( 'DELETE from local_roms where path_to_file LIKE ?', (
+            '%s%%' % path, ) )
         self.database.commit()
         cursor.close()
         return 1
@@ -239,6 +241,7 @@ class SQLdb():
         return result
 
     def already_in_local( self, path ):
+        '''Check if path is already present in local_roms'''
         result = 0
         cursor = self.database.cursor()
         ret = cursor.execute(

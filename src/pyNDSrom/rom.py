@@ -1,5 +1,5 @@
 '''Rom info'''
-import os
+import os, re
 import pyNDSrom.file
 import pyNDSrom.db
 class Rom:
@@ -71,20 +71,23 @@ class Rom:
         return 1,
 
     def size_mb( self ):
+        '''Returns size in MB'''
         result = 'Unknown'
         if self.file_info['size']:
             result = "%.2fM" % ( self.file_info['size'] / 1048576.0 )
         return result
 
     def remove( self, database = None ):
+        '''Remove file from disk, if database is specified also remove from
+        local_roms'''
+        path = re.sub( r":.*$", '', self.file_info['path'] )
         try:
-            path = re.sub( r":.*$", '', self.file_info['path'] )
             os.unlink( path )
         except OSError as exc:
             print "Failed to remove file: %s" % ( exc )
 
         if database:
-            database.remove_local( self.file_info['path'] )
+            database.remove_local( path )
 
         return 1
 

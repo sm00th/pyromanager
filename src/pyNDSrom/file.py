@@ -2,6 +2,7 @@
 import os, re, zipfile, subprocess
 import struct, binascii
 import pyNDSrom.db
+import pyNDSrom.ui
 from sqlite3 import OperationalError
 from pyNDSrom.cfg import __config__ as config
 
@@ -108,9 +109,10 @@ def scan( path ):
                     rom_file = RAR( file_info[0], database )
 
                 if rom_file.is_valid:
-                        rom_file.add_to_db()
+                    rom_file.add_to_db()
             except zipfile.BadZipfile as exc:
-                print "Failed to process zip archive %s: %s" % ( file_info[0], exc )
+                print "Failed to process zip archive %s: %s" % ( file_info[0],
+                        exc )
 
 class NDS:
     ''' Reads and(maybe) writes the contents of .nds files '''
@@ -180,7 +182,8 @@ class NDS:
             if not db_releaseid:
                 ( release_number, rom_name, location ) = parse_filename(
                         self.file_path )
-                r_releaseid      = self.database.search_known_relnum( release_number )
+                r_releaseid      = self.database.search_known_relnum(
+                        release_number )
                 n_releaseid_list = self.database.search_known_name( rom_name,
                         location )
                 if r_releaseid in n_releaseid_list:
@@ -252,7 +255,7 @@ class ZIP:
     def is_valid( self ):
         '''Check if archive contains any nds files'''
         result = 0
-        if len( nds_list ):
+        if len( self.nds_list ):
             result = 1
         return result
 
@@ -295,7 +298,7 @@ class ZIP7:
     def is_valid( self ):
         '''Check if archive contains any nds files'''
         result = 0
-        if len( nds_list ):
+        if len( self.nds_list ):
             result = 1
         return result
 
@@ -342,13 +345,14 @@ class RAR:
         self.file_path = os.path.abspath( file_path )
         self.database  = database
         self.nds_list  = []
+        self.tmp_dir   = '/tmp/'
 
         self.scan_files()
 
     def is_valid( self ):
         '''Check if archive contains any nds files'''
         result = 0
-        if len( nds_list ):
+        if len( self.nds_list ):
             result = 1
         return result
 
@@ -357,8 +361,6 @@ class RAR:
         list_archive = subprocess.Popen( [ 'unrar', 'lb', self.file_path ],
                 stdout = subprocess.PIPE, stderr = subprocess.PIPE )
 
-        list_started   = 0
-        filename_start = 0
         for filename in list_archive.stdout.readlines():
             if re.search( "\.nds$", filename, flags = re.IGNORECASE ):
                 self.nds_list.append( filename )
@@ -382,25 +384,3 @@ class RAR:
             os.unlink( temp_path )
 
         return 1
-
-
-
-#elif re.search( "\.zip$", fullPath, flags = re.IGNORECASE ):
-    #try:
-        #zipFile = zipfile.ZipFile( fullPath, "r" )
-        #for archiveFile in zipFile.namelist():
-            #if re.search( "\.nds$", archiveFile, flags = re.IGNORECASE ):
-                # TODO: maybe we can use zipfile.read instead of actually 
-                # unzipping stuff
-                # NB: hardcoding /tmp/ is probably an awfull idea
-                #zipFile.extract( archiveFile, '/tmp/' )
-                #gameInfo = self.processNDSFile( '/tmp/' + archiveFile,
-                    #interactive )
-
-                #if gameInfo != 0:
-                    #self.db.addLocalRom( os.path.abspath( fullPath ) + ":" + \
-                            #archiveFile, gameInfo )
-                #os.unlink( '/tmp/' + archiveFile )
-        #zipFile.close()
-    #except Exception as e:
-        #print "Failed parsing zip-archive %s: %s" % ( fullPath, e )

@@ -91,13 +91,13 @@ def capsize( cap ):
     '''Returns capacity size of original cartridge'''
     return pow( 2, 20 + cap ) / 8388608
 
-def scan( path ):
+def scan( path, opts ):
     '''Scan path for roms'''
     database = pyNDSrom.db.SQLdb( "%s/%s" % ( config['confDir'],
         config['dbFile'] ) )
     for file_info in search( path ):
         # TODO: think about dict of constructors(??)
-        if not database.already_in_local( file_info[0] ):
+        if opts.full_rescan or not database.already_in_local( file_info[0] ):
             try:
                 if file_info[1] == 'nds':
                     rom_file = NDS( file_info[0], database )
@@ -241,9 +241,8 @@ class NDS:
         self.query_db()
         return self.rom_info
 
-# TODO: create baseclass Archive
-class ZIP:
-    '''Zip archive handler'''
+class Archive:
+    '''Generic archive handler'''
     def __init__( self, file_path, database = None ):
         self.file_path = os.path.abspath( file_path )
         self.database  = database
@@ -259,6 +258,17 @@ class ZIP:
             result = 1
         return result
 
+    def process_nds( self, nds_filename ):
+        '''Add nds file to database'''
+        temp_path = '%s/%s' % ( self.tmp_dir, nds_filename )
+        nds = NDS( temp_path, self.database, in_archive =
+                self.file_path )
+        if nds.is_valid():
+            nds.add_to_db()
+        return temp_path
+
+class ZIP( Archive ):
+    '''Zip archive handler'''
     def scan_files( self ):
         '''Scan archive for nds files'''
         archive = zipfile.ZipFile( self.file_path, 'r' )
@@ -275,33 +285,14 @@ class ZIP:
         archive = zipfile.ZipFile( self.file_path, 'r' )
         for nds_filename in self.nds_list:
             archive.extract( nds_filename, self.tmp_dir )
-            temp_path = '%s/%s' % ( self.tmp_dir, nds_filename )
-            nds = NDS( temp_path, self.database, in_archive =
-                    self.file_path )
-            if nds.is_valid():
-                nds.add_to_db()
+            temp_path = self.process_nds( nds_filename )
             os.unlink( temp_path )
 
         archive.close()
         return 1
 
-class ZIP7:
+class ZIP7( Archive ):
     '''7zip archive handler'''
-    def __init__( self, file_path, database = None ):
-        self.file_path = os.path.abspath( file_path )
-        self.database  = database
-        self.nds_list  = []
-        self.tmp_dir   = '/tmp/'
-
-        self.scan_files()
-
-    def is_valid( self ):
-        '''Check if archive contains any nds files'''
-        result = 0
-        if len( self.nds_list ):
-            result = 1
-        return result
-
     def scan_files( self ):
         '''Scan archive for nds files'''
         list_archive = subprocess.Popen( [ '7z', 'l', self.file_path ],
@@ -330,32 +321,13 @@ class ZIP7:
                 self.file_path, nds_filename ], stdout = subprocess.PIPE,
                 stderr = subprocess.PIPE )
             decompress.wait()
-            temp_path = '%s/%s' % ( self.tmp_dir, nds_filename )
-            nds = NDS( temp_path, self.database, in_archive =
-                    self.file_path )
-            if nds.is_valid():
-                nds.add_to_db()
+            temp_path = self.process_nds( nds_filename )
             os.unlink( temp_path )
 
         return 1
 
-class RAR:
+class RAR( Archive ):
     '''Rar archive handler'''
-    def __init__( self, file_path, database = None ):
-        self.file_path = os.path.abspath( file_path )
-        self.database  = database
-        self.nds_list  = []
-        self.tmp_dir   = '/tmp/'
-
-        self.scan_files()
-
-    def is_valid( self ):
-        '''Check if archive contains any nds files'''
-        result = 0
-        if len( self.nds_list ):
-            result = 1
-        return result
-
     def scan_files( self ):
         '''Scan archive for nds files'''
         list_archive = subprocess.Popen( [ 'unrar', 'lb', self.file_path ],
@@ -376,11 +348,7 @@ class RAR:
                 nds_filename, self.tmp_dir ], stdout = subprocess.PIPE,
                 stderr = subprocess.PIPE )
             decompress.wait()
-            temp_path = '%s/%s' % ( self.tmp_dir, nds_filename )
-            nds = NDS( temp_path, self.database, in_archive =
-                    self.file_path )
-            if nds.is_valid():
-                nds.add_to_db()
+            temp_path = self.process_nds( nds_filename )
             os.unlink( temp_path )
 
         return 1

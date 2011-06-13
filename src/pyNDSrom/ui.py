@@ -62,9 +62,8 @@ class Cli( cmdln.Cmdln ):
             help = "do not scan subdirs" )
     @cmdln.option( "--non-interactive", action = "store_true",
             help = "do not ask any questions(probably a bad idea)" )
-    # TODO: update must be by default
-    @cmdln.option( "-u", "--update", action = "store_true",
-            help = "do not rescan files already in db" )
+    @cmdln.option( "-r", "--full-rescan", action = "store_true",
+            help = "readd files even if already in db" )
     def do_import( self, subcmd, opts, path ):
         """${cmd_name}: import roms from dir into database
 
@@ -72,10 +71,7 @@ class Cli( cmdln.Cmdln ):
         ${cmd_option_list}
         """
 
-        #scanner = pyNDSrom.rom.scanner( "%s/%s" % ( config['confDir'],
-            #config['dbFile'] ) )
-        #scanner.scanIntoDB( path )
-        pyNDSrom.file.scan( path )
+        pyNDSrom.file.scan( path, opts )
         print "subcmd: %s, opts: %s" % ( subcmd, opts )
 
     @cmdln.alias( "l", "ls" )

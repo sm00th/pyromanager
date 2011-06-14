@@ -18,15 +18,18 @@ def extension( file_name ):
 def search( path ):
     '''Returns list of acceptable files'''
     result = []
-    path     = os.path.abspath( path )
-    for file_name in os.listdir( path ):
-        file_path = '%s/%s' % ( path, file_name )
-        if os.path.isdir( file_path ):
-            result += search( file_path )
-        else:
-            ext = extension( file_path )
-            if ext in config['extensions']:
-                result.append( ( file_path, ext ) )
+    try:
+        path = os.path.abspath( path )
+        for file_name in os.listdir( path ):
+            file_path = '%s/%s' % ( path, file_name )
+            if os.path.isdir( file_path ):
+                result += search( file_path )
+            else:
+                ext = extension( file_path )
+                if ext in config['extensions']:
+                    result.append( ( file_path, ext ) )
+    except OSError as exc:
+        print "Can't scan path %s: %s" % ( path, exc )
     return result
 
 def strip_name( name ):
@@ -111,7 +114,7 @@ def scan( path, opts ):
                     rom_file = RAR( file_info[0], database )
                     rom_file.scan_files()
 
-                if rom_file.is_valid:
+                if rom_file.is_valid():
                     rom_file.add_to_db()
             except zipfile.BadZipfile as exc:
                 print "Failed to process zip archive %s: %s" % ( file_info[0],

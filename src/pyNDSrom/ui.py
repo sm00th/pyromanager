@@ -52,7 +52,7 @@ class Cli( cmdln.Cmdln ):
         parser = cmdln.Cmdln.get_optparser( self )
         parser.add_option(
             "--with-db",
-            dest="dbFile",
+            dest="db_file",
             help="use specified db-file"
         )
         return parser
@@ -83,14 +83,34 @@ class Cli( cmdln.Cmdln ):
         ${cmd_usage}
         ${cmd_option_list}
         """
-        database = pyNDSrom.db.SQLdb( '%s/%s' % ( config['confDir'], 
+        database = pyNDSrom.db.SQLdb( '%s/%s' % ( config['confDir'],
             config['dbFile'] ) )
         if not terms:
             terms = [ '%' ]
         for term in terms:
-            print "searching for %s..." % term
             for rom in database.local_roms_name( term ):
                 print rom
+        print "subcmd: %s, opts: %s" % ( subcmd, opts )
+
+    @cmdln.alias( "u", "up" )
+    def do_upload( self, subcmd, opts, name, *path ):
+        """${cmd_name}: upload roms to flashcart
+
+        ${cmd_usage}
+        ${cmd_option_list}
+        """
+
+        database = pyNDSrom.db.SQLdb( '%s/%s' % ( config['confDir'],
+            config['dbFile'] ) )
+        rom_list = database.local_roms_name( name )
+        index = 0
+        for rom in rom_list:
+            print " %d. %s" % ( index, rom.file_info['path'] )
+            index += 1
+        answer = pyNDSrom.ui.list_question( "Which one?",
+                range( index ) + [None] )
+        if answer != None:
+            print "%s.upload( %s )" % ( rom_list[answer], path )
         print "subcmd: %s, opts: %s" % ( subcmd, opts )
 
     def do_rmdupes( self, subcmd, opts ):
@@ -119,7 +139,7 @@ class Cli( cmdln.Cmdln ):
             print
 
     @cmdln.option( "-x", "--xml",
-            help = "specify xml file to updatefrom" )
+            help = "specify advanscene xml dat file to update from" )
     def do_updatedb( self, subcmd, opts ):
         """${cmd_name}: download and import new dat from advanscene
 

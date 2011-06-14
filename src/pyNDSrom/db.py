@@ -1,5 +1,6 @@
 '''Database manipulation module'''
-import re
+import re, os, time
+import urllib2
 import sqlite3
 import pyNDSrom.rom
 import pyNDSrom.file
@@ -260,7 +261,27 @@ class AdvansceneXML():
         self.path     = path
         self.rom_list = []
 
-        self.parse()
+    def update( self ):
+        '''Download new xml from advanscene'''
+        updated    = 0
+        local_file = '%s/%s' % ( config['confDir'], config['xmlDB'] )
+        dat_url    = 'http://advanscene.com/offline/datas/ADVANsCEne_NDS_S.zip'
+        zip_path   = '%s/%s' % ( config['confDir'], dat_url.split('/')[-1] )
+
+        url_handler = urllib2.urlopen( dat_url )
+        if not( os.path.exists( local_file ) )or time.gmtime(
+                os.stat( local_file ).st_mtime ) < time.strptime(
+                url_handler.info().getheader( 'Last-Modified' ),
+                '%a, %d %b %Y %H:%M:%S %Z' ):
+            updated = 1
+            file_handler = open( zip_path, 'w' )
+            file_handler.write( url_handler.read() )
+            file_handler.close()
+            archive = pyNDSrom.file.ZIP( zip_path )
+            archive.extract( config['xmlDB'], config['confDir' ] )
+            os.unlink( zip_path )
+
+        return updated
 
     def parse( self ):
         '''Parse specified xml'''

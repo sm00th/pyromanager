@@ -141,8 +141,8 @@ class Cli( cmdln.Cmdln ):
 
             print
 
-    @cmdln.option( "-x", "--xml",
-            help = "specify advanscene xml dat file to update from" )
+    @cmdln.option( "-f", "--force", action = "store_true",
+            help = "Force update even if xml is up to date" )
     def do_updatedb( self, subcmd, opts ):
         """${cmd_name}: download and import new dat from advanscene
 
@@ -152,7 +152,9 @@ class Cli( cmdln.Cmdln ):
 
         xml = pyNDSrom.db.AdvansceneXML( '%s/%s' % ( config['confDir'],
             config['xmlDB'] ) )
-        database = pyNDSrom.db.SQLdb( '%s/%s' % ( config['confDir'],
-            config['dbFile'] ) )
-        database.import_known( xml )
+        if xml.update() or opts.force:
+            database = pyNDSrom.db.SQLdb( '%s/%s' % ( config['confDir'],
+                config['dbFile'] ) )
+            xml.parse()
+            database.import_known( xml )
         print "subcmd: %s, opts: %s" % ( subcmd, opts )

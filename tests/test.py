@@ -50,6 +50,7 @@ class file_test( unittest.TestCase ):
 class db_test( unittest.TestCase ):
     def test_advanscene( self ):
         db = pyNDSrom.db.AdvansceneXML( 'tests/nds.xml' )
+        db.parse()
         self.assertEqual( len( db.rom_list )    , 7 )
         self.assertEqual( len( db.rom_list[0] ) , 7 )
 
@@ -58,6 +59,7 @@ class db_test( unittest.TestCase ):
     def test_import_known( self ):
         db    = pyNDSrom.db.SQLdb( 'tests/sql' )
         xmlDB = pyNDSrom.db.AdvansceneXML( 'tests/nds.xml' )
+        xmlDB.parse()
         db.import_known( xmlDB )
 
 if __name__ == '__main__':

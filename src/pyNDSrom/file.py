@@ -327,7 +327,7 @@ class ZIP7( Archive ):
 
     def extract( self, archive_file, path ):
         '''Extract specified file to path'''
-        decompress = subprocess.Popen( [ '7z', 'e', '-o%s' % path,
+        decompress = subprocess.Popen( [ '7z', 'e', '-y', '-o%s' % path,
             self.file_path, archive_file ], stdout = subprocess.PIPE,
             stderr = subprocess.PIPE )
         decompress.wait()
@@ -349,7 +349,7 @@ class RAR( Archive ):
 
     def extract( self, archive_file, path ):
         '''Extract specified file to path'''
-        decompress = subprocess.Popen( [ 'unrar', 'x', self.file_path, 
+        decompress = subprocess.Popen( [ 'unrar', 'x', '-y', self.file_path, 
             archive_file, path ], stdout = subprocess.PIPE,
             stderr = subprocess.PIPE )
         decompress.wait()

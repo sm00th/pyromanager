@@ -14,7 +14,7 @@ def list_question( msg, choice_list, default=None ):
         reply = default
     else:
         try:
-            reply = int( reply[0] )
+            reply = int( reply )
         except ValueError:
             reply = ''
 
@@ -100,17 +100,20 @@ class Cli( cmdln.Cmdln ):
         ${cmd_option_list}
         """
 
+        if not path:
+            path = config['flash_path']
         database = pyNDSrom.db.SQLdb( '%s/%s' % ( config['confDir'],
             config['dbFile'] ) )
         rom_list = database.local_roms_name( name )
         index = 0
         for rom in rom_list:
-            print " %d. %s" % ( index, rom.file_info['path'] )
+            print " %3d. %s" % ( index, rom )
             index += 1
         answer = pyNDSrom.ui.list_question( "Which one?",
                 range( index ) + [None] )
         if answer != None:
-            print "%s.upload( %s )" % ( rom_list[answer], path )
+            rom_list[answer].upload( path )
+            #print "%s.upload( %s )" % ( rom_list[answer], path )
         print "subcmd: %s, opts: %s" % ( subcmd, opts )
 
     def do_rmdupes( self, subcmd, opts ):

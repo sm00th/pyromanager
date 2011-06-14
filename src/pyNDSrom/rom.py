@@ -1,5 +1,5 @@
 '''Rom info'''
-import os, re
+import os, re, shutil
 import pyNDSrom.file
 import pyNDSrom.db
 class Rom:
@@ -77,6 +77,50 @@ class Rom:
             result = "%.2fM" % ( self.file_info['size'] / 1048576.0 )
         return result
 
+
+    def archive_path( self ):
+        '''Separates inarchive file from actual path'''
+        main_path    = self.file_info['path']
+        archive_file = None
+        try:
+            ( main_path, archive_file ) = self.file_info['path'].split( ':' )
+        except ValueError:
+            pass
+        return ( main_path, archive_file )
+
+    def filename( self ):
+        '''Formatted filename'''
+        # TODO: filename format
+        if self.rom_info['release_number'] or self.rom_info['name']:
+            name = "%04d - %s (%s).nds" % (
+                int( self.rom_info['release_number'] ), self.rom_info['name'],
+                    self.rom_info['region'] )
+        else:
+            archive_file = self.archive_path()[1]
+            if archive_file:
+                name = os.path.basename( archive_file )
+            else:
+                name = os.path.basename( self.file_info['path'] )
+
+        return name
+
+    def upload( self, path ):
+        '''Copy rom to flashcart'''
+        ( main_path, archive_file ) = self.archive_path()
+        if not archive_file:
+            shutil.copy( main_path, '%s/%s' % ( path, self.filename() ) )
+        else:
+            ext  = pyNDSrom.file.extension( main_path )
+            if ext == 'zip':
+                archive = pyNDSrom.file.ZIP( main_path )
+            elif ext == '7z':
+                archive = pyNDSrom.file.ZIP7( main_path )
+            elif ext == 'rar':
+                archive = pyNDSrom.file.RAR( main_path )
+            archive.extract( archive_file, path )
+            os.rename( '%s/%s' % ( path, archive_file ),
+                    '%s/%s' % ( path, self.filename() ) )
+
     def remove( self, database = None ):
         '''Remove file from disk, if database is specified also remove from
         local_roms'''
@@ -90,7 +134,6 @@ class Rom:
             database.remove_local( path )
 
         return 1
-
 
     def __str__( self ):
         # TODO: fix formatting somehow

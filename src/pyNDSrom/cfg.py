@@ -6,8 +6,8 @@ __config__ = {
     'confDir'    : os.path.expanduser( "~/.pyROManager" ),
     'dbFile'     : 'pyro.db',
     'xmlDB'      : 'ADVANsCEne_NDS_S.xml',
-    'extensions' : [ 'nds', 'zip', '7z' ],
-    #'extensions' : [ 'nds', 'zip', '7z', 'rar' ], Lets do nds alone first
+    'flash_path' : '/home/sm00th/flash',
+    'extensions' : [ 'nds', 'zip', '7z', 'rar' ],
     'location'   : {
         0  : ( 'Europe'      , 'EUR'   , 'E' ),
         1  : ( 'USA'         , 'USA'   , 'U' ),

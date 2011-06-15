@@ -39,6 +39,7 @@ class SQLdb():
     '''Sqlite3 db interface'''
     def __init__( self, db_file ):
         # TODO: check if db_file specified and read from config?
+        #os.makedirs( self.paths['conf_dir'] )
         self.database = sqlite3.connect( db_file )
 
     def __del__( self ):
@@ -263,6 +264,7 @@ class AdvansceneXML():
 
     def update( self ):
         '''Download new xml from advanscene'''
+        #os.makedirs( self.paths['conf_dir'] )
         updated    = 0
         local_file = '%s/%s' % ( config['confDir'], config['xmlDB'] )
         dat_url    = 'http://advanscene.com/offline/datas/ADVANsCEne_NDS_S.zip'

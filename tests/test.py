@@ -1,7 +1,49 @@
 import unittest
+import os
 import pyNDSrom.db
 import pyNDSrom.file
 import pyNDSrom.rom
+import pyNDSrom.cfg
+
+class cfg_test( unittest.TestCase ):
+    def test_default_paths( self ):
+        config = pyNDSrom.cfg.Config()
+        self.assertEqual( config.rc_file, os.path.expanduser(
+            '~/.pyROManager.rc' ) )
+        self.assertEqual( config.db_file, os.path.expanduser(
+            '~/.pyROManager/pyro.db' ) )
+        self.assertEqual( config.xml_file, os.path.expanduser(
+            '~/.pyROManager/advanscene.xml' ) )
+        self.assertEqual( config.flashcart, os.path.expanduser(
+            '/mnt/ds' ) )
+
+    def test_extensions( self ):
+        config = pyNDSrom.cfg.Config()
+        # FIXME: its not always like that
+        self.assertListEqual( config.extensions, [ 'nds', 'zip', '7z', 'rar' ] )
+
+    def test_regions( self ):
+        config = pyNDSrom.cfg.Config()
+        self.assertEqual( config.region_name( 0 ), 'EUR' )
+        self.assertEqual( config.region_name( 0, 0 ), 'Europe' )
+        self.assertEqual( config.region_name( 0, 1 ), 'EUR' )
+        self.assertEqual( config.region_name( 0, 2 ), 'E' )
+
+        self.assertEqual( config.region_code( 'Japan' ), 7 )
+        self.assertEqual( config.region_code( 'JPN' ), 7 )
+        self.assertEqual( config.region_code( 'J' ), 7 )
+
+    def test_rc( self ):
+        config = pyNDSrom.cfg.Config( 'tests/test.rc' )
+        config.read_config()
+        self.assertEqual( config.rc_file, os.path.expanduser(
+            'tests/test.rc' ) )
+        self.assertEqual( config.db_file, os.path.expanduser(
+            '~/.pyROManager/sql.db' ) )
+        self.assertEqual( config.xml_file, os.path.expanduser(
+            '~/.pyROManager/adv.xml' ) )
+        self.assertEqual( config.flashcart, os.path.expanduser(
+            '/home/sm00th/flash' ) )
 
 class rom_test( unittest.TestCase ):
     def test_norm_name( self ):

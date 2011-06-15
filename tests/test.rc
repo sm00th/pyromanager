@@ -1,0 +1,11 @@
+[paths]
+db_file   = sql.db
+xml_file  = adv.xml
+flashcart = /home/sm00th/flash
+
+[url]
+advanscene = http://advanscene.com/offline/datas/ADVANsCEne_NDS_S.zip
+
+[binaries]
+7z  = /usr/bin/7z
+rar = /usr/bin/unrar

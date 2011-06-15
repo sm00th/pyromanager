@@ -1,7 +1,8 @@
 '''Rom info'''
 import os, re, shutil
 import pyNDSrom.file
-import pyNDSrom.db
+import cfg
+
 class Rom:
     '''internal representation of roms'''
 
@@ -60,12 +61,14 @@ class Rom:
 
     def set_rom_info( self, rom_data ):
         '''Set rom information'''
+        config = cfg.Config()
+        config.read_config()
         self.rom_info = {
                 'release_number'  : rom_data[0],
                 'name'            : rom_data[1],
                 'publisher'       : rom_data[2],
                 'released_by'     : rom_data[3],
-                'region'          : pyNDSrom.db.decode_location( rom_data[4] ),
+                'region'          : config.region_name( rom_data[4] ),
                 'normalized_name' : rom_data[5],
         }
         return 1,

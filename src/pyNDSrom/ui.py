@@ -1,7 +1,7 @@
 '''User interface routines for pyROManager'''
 import cmdln
 import pyNDSrom.file
-from cfg import __config__ as config
+import db, cfg
 
 def list_question( msg, choice_list, default=None ):
     '''Qustion with multiple choices'''
@@ -48,6 +48,13 @@ def question_yn( msg, default="y" ):
     return choices[reply][1]
 
 class Cli( cmdln.Cmdln ):
+
+    def __init__( self, *args ):
+        cmdln.Cmdln.__init__( self, args )
+        self.config = cfg.Config()
+        self.config.read_config()
+        self.database = db.SQLdb( self.config.db_file )
+
     def get_optparser( self ):
         parser = cmdln.Cmdln.get_optparser( self )
         parser.add_option(
@@ -83,12 +90,10 @@ class Cli( cmdln.Cmdln ):
         ${cmd_usage}
         ${cmd_option_list}
         """
-        database = pyNDSrom.db.SQLdb( '%s/%s' % ( config['confDir'],
-            config['dbFile'] ) )
         if not terms:
             terms = [ '%' ]
         for term in terms:
-            for rom in database.local_roms_name( term ):
+            for rom in self.database.local_roms_name( term ):
                 print rom
         print "subcmd: %s, opts: %s" % ( subcmd, opts )
 
@@ -101,16 +106,13 @@ class Cli( cmdln.Cmdln ):
         """
 
         if not path:
-            path = config['flash_path']
-        database = pyNDSrom.db.SQLdb( '%s/%s' % ( config['confDir'],
-            config['dbFile'] ) )
-        rom_list = database.local_roms_name( name )
+            path = self.config.flashcart
+        rom_list = self.database.local_roms_name( name )
         index = 0
         for rom in rom_list:
             print " %3d. %s" % ( index, rom )
             index += 1
-        answer = pyNDSrom.ui.list_question( "Which one?",
-                range( index ) + [None] )
+        answer = list_question( "Which one?", range( index ) + [None] )
         if answer != None:
             rom_list[answer].upload( path )
             #print "%s.upload( %s )" % ( rom_list[answer], path )
@@ -122,22 +124,19 @@ class Cli( cmdln.Cmdln ):
         ${cmd_usage}
         ${cmd_option_list}
         """
-        database = pyNDSrom.db.SQLdb( '%s/%s' % ( config['confDir'],
-            config['dbFile'] ) )
-        for crc32 in database.find_dupes():
-            rom_list = database.local_roms_crc32( crc32[1] )
+        for crc32 in self.database.find_dupes():
+            rom_list = self.database.local_roms_crc32( crc32[1] )
             print "%d duplicates found for %s" % ( crc32[0], rom_list[0] )
             print "Delete all but one(None - let all be)"
             index = 0
             for rom in rom_list:
                 print " %d. %s" % ( index, rom.file_info['path'] )
                 index += 1
-            answer = pyNDSrom.ui.list_question( "Which one?",
-                    range( index ) + [None] )
+            answer = list_question( "Which one?", range( index ) + [None] )
             if answer != None:
                 del rom_list[answer]
                 for rom in rom_list:
-                    rom.remove( database )
+                    rom.remove( self.database )
 
             print
 
@@ -150,11 +149,8 @@ class Cli( cmdln.Cmdln ):
         ${cmd_option_list}
         """
 
-        xml = pyNDSrom.db.AdvansceneXML( '%s/%s' % ( config['confDir'],
-            config['xmlDB'] ) )
+        xml = pyNDSrom.db.AdvansceneXML( self.config.xml_file )
         if xml.update() or opts.force:
-            database = pyNDSrom.db.SQLdb( '%s/%s' % ( config['confDir'],
-                config['dbFile'] ) )
             xml.parse()
-            database.import_known( xml )
+            self.database.import_known( xml )
         print "subcmd: %s, opts: %s" % ( subcmd, opts )

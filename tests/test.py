@@ -60,7 +60,8 @@ class file_test( unittest.TestCase ):
                 'wtf' )
 
     def test_search( self ):
-        self.assertEqual( len( pyNDSrom.file.search( '' ) ), 3 )
+        config = pyNDSrom.cfg.Config()
+        self.assertEqual( len( pyNDSrom.file.search( '', config ) ), 3 )
 
     def test_nds( self ):
         testFile = pyNDSrom.file.NDS( 'tests/TinyFB.nds' )

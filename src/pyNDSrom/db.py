@@ -1,31 +1,11 @@
 '''Database manipulation module'''
-import re, os, time
+import re, os, time, shutil
 import urllib2
 import sqlite3
-import pyNDSrom.rom
+import rom
 import pyNDSrom.file
+import cfg
 from xml.dom import minidom
-from pyNDSrom.cfg import __config__ as config
-
-def encode_location( name ):
-    '''Translates location name to int'''
-    for ( location_id, aliases ) in config['location'].iteritems():
-        if name.lower() in [ x.lower() for x in aliases ]:
-            return location_id
-
-    return None
-
-def decode_location( location_id, return_type=1 ):
-    '''Translates location id to it's name'''
-    result = 'Unknown: %d' % location_id
-    if return_type not in range(3):
-        return_type = 1
-    try:
-        result = config['location'][location_id][return_type]
-    except KeyError:
-        pass
-
-    return result
 
 def node_text( node_list ):
     '''Extract text from node'''
@@ -38,8 +18,9 @@ def node_text( node_list ):
 class SQLdb():
     '''Sqlite3 db interface'''
     def __init__( self, db_file ):
-        # TODO: check if db_file specified and read from config?
-        #os.makedirs( self.paths['conf_dir'] )
+        config = cfg.Config()
+        config.read_config()
+        pyNDSrom.file.mkdir( config.config_dir )
         self.database = sqlite3.connect( db_file )
 
     def __del__( self ):
@@ -159,11 +140,11 @@ class SQLdb():
         ).fetchall()
         if returned:
             for ( release_id, path, size, crc32 ) in returned:
-                rom = pyNDSrom.rom.Rom()
+                rom_obj = rom.Rom()
                 if release_id:
-                    rom = self.rom_info( release_id )
-                rom.set_file_info( ( path, size, crc32 ) )
-                result.append( rom )
+                    rom_obj = self.rom_info( release_id )
+                rom_obj.set_file_info( ( path, size, crc32 ) )
+                result.append( rom_obj )
         cursor.close()
 
         return result
@@ -183,11 +164,11 @@ class SQLdb():
         ).fetchall()
         if returned:
             for ( release_id, path, size ) in returned:
-                rom = pyNDSrom.rom.Rom()
+                rom_obj = rom.Rom()
                 if release_id:
-                    rom = self.rom_info( release_id )
-                rom.set_file_info( ( path, size, crc32 ) )
-                result.append( rom )
+                    rom_obj = self.rom_info( release_id )
+                rom_obj.set_file_info( ( path, size, crc32 ) )
+                result.append( rom_obj )
         cursor.close()
 
         return result
@@ -203,7 +184,7 @@ class SQLdb():
 
     def rom_info( self, release_number ):
         '''Returns rom info for rom specified by release number'''
-        rom_data = pyNDSrom.rom.Rom()
+        rom_data = rom.Rom()
         cursor = self.database.cursor()
         returned = cursor.execute(
             'SELECT release_id, name, publisher, released_by, location, ' + \
@@ -264,15 +245,16 @@ class AdvansceneXML():
 
     def update( self ):
         '''Download new xml from advanscene'''
-        #os.makedirs( self.paths['conf_dir'] )
+        config = cfg.Config()
+        config.read_config()
+        pyNDSrom.file.mkdir( config.config_dir )
         updated    = 0
-        local_file = '%s/%s' % ( config['confDir'], config['xmlDB'] )
         dat_url    = 'http://advanscene.com/offline/datas/ADVANsCEne_NDS_S.zip'
-        zip_path   = '%s/%s' % ( config['confDir'], dat_url.split('/')[-1] )
+        zip_path   = '%s/%s' % ( config.tmp_dir, dat_url.split('/')[-1] )
 
         url_handler = urllib2.urlopen( dat_url )
-        if not( os.path.exists( local_file ) )or time.gmtime(
-                os.stat( local_file ).st_mtime ) < time.strptime(
+        if not( os.path.exists( config.xml_file ) )or time.gmtime(
+                os.stat( config.xml_file ).st_mtime ) < time.strptime(
                 url_handler.info().getheader( 'Last-Modified' ),
                 '%a, %d %b %Y %H:%M:%S %Z' ):
             updated = 1
@@ -280,7 +262,11 @@ class AdvansceneXML():
             file_handler.write( url_handler.read() )
             file_handler.close()
             archive = pyNDSrom.file.ZIP( zip_path )
-            archive.extract( config['xmlDB'], config['confDir' ] )
+            archive.scan_files( 'xml' )
+            archive_xml = archive.file_list[0]
+            archive.extract( archive_xml, config.tmp_dir )
+            shutil.move( '%s/%s' % ( config.tmp_dir, archive_xml ),
+                    config.xml_file )
             os.unlink( zip_path )
 
         return updated

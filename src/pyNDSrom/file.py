@@ -1,10 +1,12 @@
 '''File operations'''
 import os, re, zipfile, subprocess
 import struct, binascii
-import pyNDSrom.db
-import pyNDSrom.ui
+import db, ui, cfg, rom
 from sqlite3 import OperationalError
-from pyNDSrom.cfg import __config__ as config
+
+def mkdir( path ):
+    if not os.path.exists( path ):
+        os.mkdir( path )
 
 def extension( file_name ):
     '''Returns the extension of specified file'''
@@ -15,7 +17,7 @@ def extension( file_name ):
 
     return result
 
-def search( path ):
+def search( path, config ):
     '''Returns list of acceptable files'''
     result = []
     try:
@@ -23,10 +25,10 @@ def search( path ):
         for file_name in os.listdir( path ):
             file_path = '%s/%s' % ( path, file_name )
             if os.path.isdir( file_path ):
-                result += search( file_path )
+                result += search( file_path, config )
             else:
                 ext = extension( file_path )
-                if ext in config['extensions']:
+                if ext in config.extensions:
                     result.append( ( file_path, ext ) )
     except OSError as exc:
         print "Can't scan path %s: %s" % ( path, exc )
@@ -44,6 +46,8 @@ def strip_name( name ):
 
 def parse_filename( filename ):
     '''Parse rom name'''
+    config = cfg.Config()
+    config.read_config()
     release_number = None
 
     filename = filename.lower()
@@ -67,7 +71,7 @@ def parse_filename( filename ):
     location = None
     for tag in re.findall( r"(\(|\[)(\w+)(\)|\])", filename ):
         if not location:
-            location = pyNDSrom.db.encode_location( tag[1] )
+            location = config.region_code( tag[1] )
 
     filename = strip_name( filename )
 
@@ -96,9 +100,10 @@ def capsize( cap ):
 
 def scan( path, opts ):
     '''Scan path for roms'''
-    database = pyNDSrom.db.SQLdb( "%s/%s" % ( config['confDir'],
-        config['dbFile'] ) )
-    for file_info in search( path ):
+    config = cfg.Config()
+    config.read_config()
+    database = db.SQLdb( config.db_file )
+    for file_info in search( path, config ):
         # TODO: think about dict of constructors(??)
         if opts.full_rescan or not database.already_in_local( file_info[0] ):
             try:
@@ -168,8 +173,8 @@ class NDS:
             self.rom['size']  = os.path.getsize( self.file_path )
 
             file_handler.close()
-        except IOError:
-            raise Exception( 'Failed to read file' )
+        except IOError as exc:
+            print 'Failed to read file %s: %s' % ( self.file_path, exc )
 
     def add_to_db( self ):
         '''Add current nds file to database'''
@@ -212,7 +217,7 @@ class NDS:
             self.rom_info.set_file_info( ( self.real_path, self.rom['size'],
                 self.rom['crc32'] ) )
         else:
-            self.rom_info = pyNDSrom.rom.Rom( file_data = ( self.real_path,
+            self.rom_info = rom.Rom( file_data = ( self.real_path,
                 self.rom['size'], self.rom['crc32'] ) )
 
             print "Wasn't able to identify %s" % ( self.real_path )
@@ -222,21 +227,21 @@ class NDS:
         '''Confirm that file was detected right'''
         result = 0
         if type( db_releaseid ) == int:
-            rom = self.database.rom_info( db_releaseid )
+            rom_obj = self.database.rom_info( db_releaseid )
             print "File '%s' was identified as %s" % (
                     os.path.basename( self.file_path ),
-                    rom,
+                    rom_obj
             )
-            result = pyNDSrom.ui.question_yn( "Is this correct?" )
+            result = ui.question_yn( "Is this correct?" )
         elif type( db_releaseid ) == list:
             print "File '%s' can be one of the following:" % ( 
                     os.path.basename( self.file_path ) )
             index = 0
             for release_id in db_releaseid:
-                rom = self.database.rom_info( release_id )
-                print " %d. %s" % ( index, rom )
+                rom_obj = self.database.rom_info( release_id )
+                print " %d. %s" % ( index, rom_obj )
                 index += 1
-            result = pyNDSrom.ui.list_question( "Which one?",
+            result = ui.list_question( "Which one?",
                     range(index) + [None] )
         print
 
@@ -253,12 +258,12 @@ class Archive:
         self.file_path = os.path.abspath( file_path )
         self.database  = database
         self.tmp_dir   = '/tmp/'
-        self.nds_list  = []
+        self.file_list = []
 
     def is_valid( self ):
         '''Check if archive contains any nds files'''
         result = 0
-        if len( self.nds_list ):
+        if len( self.file_list ):
             result = 1
         return result
 
@@ -277,7 +282,7 @@ class Archive:
     def add_to_db( self ):
         '''Add nds files from archive to database'''
 
-        for nds_filename in self.nds_list:
+        for nds_filename in self.file_list:
             nds_path = self.extract( nds_filename, self.tmp_dir )
             self.process_nds( nds_path )
             os.unlink( nds_path )
@@ -286,12 +291,12 @@ class Archive:
 
 class ZIP( Archive ):
     '''Zip archive handler'''
-    def scan_files( self ):
-        '''Scan archive for nds files'''
+    def scan_files( self, ext = 'nds' ):
+        '''Scan archive'''
         archive = zipfile.ZipFile( self.file_path, 'r' )
         for compressed in archive.namelist():
-            if re.search( "\.nds$", compressed, flags = re.IGNORECASE ):
-                self.nds_list.append( compressed )
+            if re.search( "\.%s$" % ext, compressed, flags = re.IGNORECASE ):
+                self.file_list.append( compressed )
         archive.close()
 
         return 1
@@ -305,8 +310,8 @@ class ZIP( Archive ):
 
 class ZIP7( Archive ):
     '''7zip archive handler'''
-    def scan_files( self ):
-        '''Scan archive for nds files'''
+    def scan_files( self, ext = 'nds' ):
+        '''Scan archive'''
         list_archive = subprocess.Popen( [ '7z', 'l', self.file_path ],
                 stdout = subprocess.PIPE, stderr = subprocess.PIPE )
 
@@ -319,8 +324,8 @@ class ZIP7( Archive ):
                 filename_start = len( line.split( '  ' )[0] ) + 2
             elif list_started:
                 filename = line[filename_start:]
-                if re.search( "\.nds$", filename, flags = re.IGNORECASE ):
-                    self.nds_list.append( filename )
+                if re.search( "\.%s$" % ext, filename, flags = re.IGNORECASE ):
+                    self.file_list.append( filename )
         list_archive.wait()
 
         return 1
@@ -335,14 +340,15 @@ class ZIP7( Archive ):
 
 class RAR( Archive ):
     '''Rar archive handler'''
-    def scan_files( self ):
-        '''Scan archive for nds files'''
+    def scan_files( self, ext = 'nds' ):
+        '''Scan archive'''
         list_archive = subprocess.Popen( [ 'unrar', 'lb', self.file_path ],
                 stdout = subprocess.PIPE, stderr = subprocess.PIPE )
 
         for filename in list_archive.stdout.readlines():
-            if re.search( "\.nds$", filename, flags = re.IGNORECASE ):
-                self.nds_list.append( filename )
+            filename = filename.rstrip()
+            if re.search( "\.%s$" % ext, filename, flags = re.IGNORECASE ):
+                self.file_list.append( filename )
         list_archive.wait()
 
         return 1

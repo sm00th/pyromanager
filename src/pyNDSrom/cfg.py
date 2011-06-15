@@ -3,27 +3,6 @@ import os
 import subprocess
 import ConfigParser
 
-# TODO: actual config
-__config__ = {
-    'confDir'    : os.path.expanduser( "~/.pyROManager" ),
-    'dbFile'     : 'pyro.db',
-    'xmlDB'      : 'ADVANsCEne_NDS_S.xml',
-    'flash_path' : '/home/sm00th/flash',
-    'extensions' : [ 'nds', 'zip', '7z', 'rar' ],
-    'location'   : {
-        0  : ( 'Europe'      , 'EUR'   , 'E' ),
-        1  : ( 'USA'         , 'USA'   , 'U' ),
-        2  : ( 'Germany'     , 'GER'   , 'G' ),
-        4  : ( 'Spain'       , 'SPA'   , 'S' ),
-        5  : ( 'France'      , 'FRA'   , 'F' ),
-        6  : ( 'Italy'       , 'ITA'   , 'I' ),
-        7  : ( 'Japan'       , 'JPN'   , 'J' ),
-        8  : ( 'Netherlands' , 'DUTCH' , 'N' ),
-        19 : ( 'Australia'   , 'AUS'   , 'A' ),
-        22 : ( 'Korea'       , 'KOR'   , 'K' ),
-    },
-}
-
 def check_bin( binfile ):
     '''Determine if binary is somewhere in $PATH'''
     exists = 1
@@ -42,6 +21,7 @@ class Config:
                 'conf_dir'  : os.path.expanduser( "~/.pyROManager" ),
                 'db_file'   : 'pyro.db',
                 'xml_file'  : 'advanscene.xml',
+                'tmp_dir'   : '/tmp',
                 'flashcart' : '/mnt/ds',
         }
         self._locations = {
@@ -72,7 +52,9 @@ class Config:
         if os.path.isfile( self.rc_file ):
             parser.read( self.rc_file )
         else:
+            # FIXME: will write new config even if it user-specified
             self.write_config()
+            return
 
         if parser.has_option( 'paths', 'db_file' ):
             self._paths['db_file'] = parser.get( 'paths', 'db_file' )
@@ -80,6 +62,16 @@ class Config:
             self._paths['xml_file'] = parser.get( 'paths', 'xml_file' )
         if parser.has_option( 'paths', 'flashcart' ):
             self._paths['flashcart'] = parser.get( 'paths', 'flashcart' )
+
+    @property
+    def config_dir( self ):
+        '''Config dir path'''
+        return self._paths['conf_dir']
+
+    @property
+    def tmp_dir( self ):
+        '''Temporary dir for archives mountpoint'''
+        return self._paths['tmp_dir']
 
     @property
     def flashcart( self ):

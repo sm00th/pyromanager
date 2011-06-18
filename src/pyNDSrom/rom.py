@@ -142,12 +142,14 @@ class Rom:
         # TODO: fix formatting somehow
         rom_string = ''
         if self.rom_info['release_number'] or self.rom_info['name']:
-            rom_string = "%4s - %s (%s)" % (
+            rom_string = "%4s - %s (%s) [%s]" % (
                 self.rom_info['release_number'], self.rom_info['name'],
-                    self.rom_info['region'] )
+                    self.rom_info['region'], self.rom_info['released_by'] )
         else:
             rom_string = '%s( %s )' % ( self.normalized_name,
                     self.file_info['path'] )
         if self.file_info['size']:
             rom_string += ' Size: %s' % self.size_mb()
+        if re.search( ':', self.file_info['path'] ):
+            rom_string += ' [Archived]'
         return rom_string

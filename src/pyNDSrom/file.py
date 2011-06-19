@@ -5,6 +5,7 @@ import db, ui, cfg, rom
 from sqlite3 import OperationalError
 
 def mkdir( path ):
+    '''Create dir if not exists'''
     if not os.path.exists( path ):
         os.mkdir( path )
 
@@ -104,7 +105,7 @@ def scan( path, opts ):
     config.read_config()
     database = db.SQLdb( config.db_file )
     for file_info in search( path, config ):
-        # TODO: think about dict of constructors(??)
+        # TODO: think about factory
         if opts.full_rescan or not database.already_in_local( file_info[0] ):
             try:
                 if file_info[1] == 'nds':
@@ -188,6 +189,7 @@ class NDS:
     def query_db( self ):
         '''Get info about nds file from database'''
         db_releaseid = None
+        # TODO: refactor this godawful puppy
         if not self.rom_info:
             db_releaseid = self.database.search_known_crc( self.rom['crc32'] )
             if not db_releaseid:
@@ -211,6 +213,20 @@ class NDS:
                                 answer = self.confirm_file( n_releaseid_list )
                                 if answer != None:
                                     db_releaseid = n_releaseid_list[answer]
+                                elif ui.question_yn(
+                                        "Want to manually search by name?",
+                                        "n" ):
+                                    print "Enter name: ",
+                                    search_name = raw_input().lower()
+                                    id_list = self.database.search_known_name(
+                                            search_name )
+                                    if len( id_list ) == 1 and \
+                                            self.confirm_file( id_list[0] ):
+                                        db_releaseid = id_list[0]
+                                    else:
+                                        answer = self.confirm_file( id_list )
+                                        if answer != None:
+                                            db_releaseid = id_list[answer]
 
         if db_releaseid:
             self.rom_info = self.database.rom_info( db_releaseid )

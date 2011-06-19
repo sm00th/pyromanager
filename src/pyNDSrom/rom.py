@@ -150,6 +150,6 @@ class Rom:
                     self.file_info['path'] )
         if self.file_info['size']:
             rom_string += ' Size: %s' % self.size_mb()
-        if re.search( ':', self.file_info['path'] ):
+        if self.file_info['path'] and re.search( ':', self.file_info['path'] ):
             rom_string += ' [Archived]'
         return rom_string

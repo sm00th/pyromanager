@@ -213,20 +213,22 @@ class NDS:
                                 answer = self.confirm_file( n_releaseid_list )
                                 if answer != None:
                                     db_releaseid = n_releaseid_list[answer]
-                                elif ui.question_yn(
-                                        "Want to manually search by name?",
-                                        "n" ):
-                                    print "Enter name: ",
-                                    search_name = raw_input().lower()
-                                    id_list = self.database.search_known_name(
-                                            search_name )
-                                    if len( id_list ) == 1 and \
-                                            self.confirm_file( id_list[0] ):
-                                        db_releaseid = id_list[0]
-                                    else:
-                                        answer = self.confirm_file( id_list )
-                                        if answer != None:
-                                            db_releaseid = id_list[answer]
+                        else:
+                            print "Wasn't able to automatically identify %s" % (
+                                    self.real_path )
+                            if ui.question_yn(
+                                "Want to manually search by name?" ):
+                                print "Enter name: ",
+                                search_name = raw_input().lower()
+                                id_list = self.database.search_known_name(
+                                        search_name )
+                                if len( id_list ) == 1 and \
+                                        self.confirm_file( id_list[0] ):
+                                    db_releaseid = id_list[0]
+                                else:
+                                    answer = self.confirm_file( id_list )
+                                    if answer != None:
+                                        db_releaseid = id_list[answer]
 
         if db_releaseid:
             self.rom_info = self.database.rom_info( db_releaseid )

@@ -153,4 +153,7 @@ class Cli( cmdln.Cmdln ):
         if xml.update() or opts.force:
             xml.parse()
             self.database.import_known( xml )
+            print "Database updated"
+        else:
+            print "Already up to date"
         print "subcmd: %s, opts: %s" % ( subcmd, opts )

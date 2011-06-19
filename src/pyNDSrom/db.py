@@ -223,17 +223,18 @@ class SQLdb():
         cursor.close()
         return result
 
-    def already_in_local( self, path ):
+    def already_in_local( self, path, no_search = 0 ):
         '''Check if path is already present in local_roms'''
         result = 0
         cursor = self.database.cursor()
         ret = cursor.execute(
-            'SELECT id FROM local_roms ' + \
+            'SELECT id, release_id FROM local_roms ' + \
             'WHERE path_to_file LIKE ?',
             ( '%s%%' % path, )
-        ).fetchall()
+        ).fetchone()
         if ret:
-            result = 1
+            if ret[1] or no_search:
+                result = 1
         cursor.close()
         return result
 

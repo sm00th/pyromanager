@@ -106,7 +106,7 @@ def scan( path, opts ):
     database = db.SQLdb( config.db_file )
     for file_info in search( path, config ):
         # TODO: think about factory
-        if opts.full_rescan or not database.already_in_local( file_info[0] ):
+        if opts.full_rescan or not database.already_in_local( file_info[0], 0 ):
             try:
                 if file_info[1] == 'nds':
                     rom_file = NDS( file_info[0], database )
@@ -239,6 +239,7 @@ class NDS:
                 self.rom['size'], self.rom['crc32'] ) )
 
             print "Wasn't able to identify %s" % ( self.real_path )
+            print
         return 1
 
     def confirm_file( self, db_releaseid ):

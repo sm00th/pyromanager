@@ -3,32 +3,59 @@ import os, re, shutil
 import pyNDSrom.file
 import cfg
 
+class RomInfo:
+    '''Rom info'''
+    def __init__( self, release_id = None ):
+        pass
+
+    def __str__( self ):
+        pass
+
+class FileInfo:
+    '''File info'''
+    def __init__( self, path, database ):
+        self.database = database
+        self.path     = path
+        self.info     = {}
+
+    def split_path( self ):
+        archive_path = self.path
+        file_path    = None
+        try:
+            ( archive_path, file_path ) = self.path.split( ':' )
+        except ValueError:
+            pass
+        return ( archive_path, file_path )
+
+    def is_archived( self ):
+        result = 0
+        if re.search( ':', self.path ):
+            result = 1
+        return result
+
+    def query_db( self ):
+        pass
+
+    def __str__( self ):
+        pass
+
 class Rom:
     '''internal representation of roms'''
 
-    def __init__( self, rom_data = None, file_data = None ):
-        self.rom_info = {
-                'release_number'  : None,
-                'name'            : None,
-                'publisher'       : None,
-                'released_by'     : None,
-                'region'          : None,
-                'normalized_name' : None,
-        }
-        self.file_info = {
-                'path'  : None,
-                'size'  : None,
-                'crc32' : None,
-        }
-        if file_data:
-            self.set_file_info( file_data )
-        if rom_data:
-            self.set_rom_info( rom_data )
+    def __init__( self, database, config, rom_data = None, file_data = None ):
+        self.database  = database
+        self.config    = config
+        self.rom_info  = rom_data
+        self.file_info = file_data
 
-    def has_data( self ):
+    def is_in_db( self ):
+        '''Check if file is present in local table'''
+        return 0
+
+    def is_initialized( self ):
         '''Checks if there is any information in this object'''
         result = 0
-        if self.rom_info['name'] or self.rom_info['path']:
+        if self.file_info or self.rom_info:
             result = 1
         return result
 

@@ -17,11 +17,12 @@ def node_text( node_list ):
 
 class SQLdb():
     '''Sqlite3 db interface'''
-    def __init__( self, db_file ):
-        config = cfg.Config()
+    def __init__( self, db_file = None, config = None ):
+        if not config:
+            config = cfg.Config()
         config.read_config()
         pyNDSrom.file.mkdir( config.config_dir )
-        self.database = sqlite3.connect( db_file )
+        self.database = sqlite3.connect( db_file or config.db_file )
 
     def __del__( self ):
         self.database.close()

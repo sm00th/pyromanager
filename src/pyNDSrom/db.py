@@ -50,8 +50,8 @@ class SQLdb():
             'crc32 NUMERIC,' + \
             'UNIQUE( path_to_file ) ON CONFLICT REPLACE);'
         )
-        self.database.commit()
         cursor.close()
+        self.save()
 
     def import_known( self, provider ):
         '''Imports known roms from provider'''
@@ -64,7 +64,6 @@ class SQLdb():
                 'INSERT OR REPLACE INTO known_roms VALUES(?,?,?,?,?,?,?)',
                 data
             )
-        self.database.commit()
         cursor.close()
         return 1
 
@@ -179,7 +178,6 @@ class SQLdb():
         cursor = self.database.cursor()
         cursor.execute( 'DELETE from local_roms where path_to_file LIKE ?', (
             '%s%%' % path, ) )
-        self.database.commit()
         cursor.close()
         return 1
 
@@ -208,7 +206,6 @@ class SQLdb():
             'values ( ?, ?, ?, ?, ? )',
             local_info
         )
-        self.database.commit()
         return 1
 
     def find_dupes( self ):
@@ -238,6 +235,9 @@ class SQLdb():
                 result = 1
         cursor.close()
         return result
+
+    def save( self ):
+        self.database.commit()
 
 class AdvansceneXML():
     '''Advanscene xml parser'''

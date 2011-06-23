@@ -79,7 +79,8 @@ class Cli( cmdln.Cmdln ):
         """
 
         #pyNDSrom.file.scan( path, opts )
-        pyNDSrom.rom.import_path( path, opts )
+        pyNDSrom.rom.import_path( path, opts, self.config, self.database )
+        self.database.save()
         print "subcmd: %s, opts: %s" % ( subcmd, opts )
 
     @cmdln.alias( "l", "ls" )
@@ -138,7 +139,7 @@ class Cli( cmdln.Cmdln ):
                 del rom_list[answer]
                 for rom in rom_list:
                     rom.remove( self.database )
-
+                    self.database.save()
             print
 
     @cmdln.option( "-f", "--force", action = "store_true",
@@ -154,6 +155,7 @@ class Cli( cmdln.Cmdln ):
         if xml.update() or opts.force:
             xml.parse()
             self.database.import_known( xml )
+            self.database.save()
             print "Database updated"
         else:
             print "Already up to date"

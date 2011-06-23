@@ -1,7 +1,7 @@
 '''Rom info'''
 import os, re, zipfile, subprocess, shutil
 import struct, binascii
-import cfg, ui, db
+import cfg, ui
 
 class RomInfo:
     '''Rom info'''
@@ -175,14 +175,15 @@ class FileInfo:
 class Rom:
     '''internal representation of roms'''
 
-    def __init__( self, path, database, config ):
+    def __init__( self, path, database, config, rom_info = None ):
         self.database  = database
         self.config    = config
 
         self.file_info = FileInfo( path, database, config )
-        self.file_info.init()
 
-        self.rom_info  = self.file_info.get_rom_info()
+        if not rom_info:
+            self.file_info.init()
+            self.rom_info  = self.file_info.get_rom_info()
 
     def is_valid( self ):
         '''If rom is valid'''
@@ -526,3 +527,8 @@ def import_path( path, opts, config, database ):
         rom = Rom( rom_path, database, config )
         if ( opts.full_rescan or not rom.is_in_db() ) and rom.is_valid():
             rom.add_to_db()
+
+def mkdir( path ):
+    '''Create dir if not exists'''
+    if not os.path.exists( path ):
+        os.mkdir( path )

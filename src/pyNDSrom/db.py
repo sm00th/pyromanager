@@ -3,7 +3,6 @@ import re, os, time, shutil
 import urllib2
 import sqlite3
 import rom
-import pyNDSrom.file
 import cfg
 from xml.dom import minidom
 
@@ -21,7 +20,7 @@ class SQLdb():
         if not config:
             config = cfg.Config()
         config.read_config()
-        pyNDSrom.file.mkdir( config.config_dir )
+        rom.mkdir( config.config_dir )
         self.database = sqlite3.connect( db_file or config.db_file )
 
     def __del__( self ):
@@ -136,15 +135,17 @@ class SQLdb():
             'FROM local_roms ' + \
             'WHERE normalized_name LIKE ? ' + \
             'ORDER BY release_id',
-            ( normalized_name, ) 
+            ( normalized_name, )
         ).fetchall()
         if returned:
             for ( release_id, path, size, crc32 ) in returned:
-                rom_obj = rom.Rom()
+                rom_info = None
                 if release_id:
-                    rom_obj = self.rom_info( release_id )
-                rom_obj.set_file_info( ( path, size, crc32 ) )
-                result.append( rom_obj )
+                    rom_info = rom.RomInfo( release_id, self.database )
+                # FIXME: that would parse file even if we already have all the
+                # info in db, awful
+                result.append( rom.Rom( path, self.database, self.config,
+                        rom_info ) )
         cursor.close()
 
         return result
@@ -249,7 +250,7 @@ class AdvansceneXML():
         '''Download new xml from advanscene'''
         config = cfg.Config()
         config.read_config()
-        pyNDSrom.file.mkdir( config.config_dir )
+        rom.mkdir( config.config_dir )
         updated    = 0
         dat_url    = 'http://advanscene.com/offline/datas/ADVANsCEne_NDS_S.zip'
         zip_path   = '%s/%s' % ( config.tmp_dir, dat_url.split('/')[-1] )
@@ -263,7 +264,7 @@ class AdvansceneXML():
             file_handler = open( zip_path, 'w' )
             file_handler.write( url_handler.read() )
             file_handler.close()
-            archive = pyNDSrom.file.ZIP( zip_path )
+            archive = rom.Zip( zip_path )
             archive.scan_files( 'xml' )
             archive_xml = archive.file_list[0]
             archive.extract( archive_xml, config.tmp_dir )
@@ -294,7 +295,7 @@ class AdvansceneXML():
         release_number = int( node_text(
                 node.getElementsByTagName( 'releaseNumber' )[0].childNodes ) )
         crc32 = self.get_crc( node )
-        normalized_name = pyNDSrom.rom.strip_name( title.lower() )
+        normalized_name = rom.strip_name( title.lower() )
         return ( release_number, title, crc32, publisher, released_by,
                 location, normalized_name )
 

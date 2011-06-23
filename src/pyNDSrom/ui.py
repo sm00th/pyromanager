@@ -1,6 +1,5 @@
 '''User interface routines for pyROManager'''
 import cmdln
-import pyNDSrom.file
 import db, cfg
 
 def list_question( msg, choice_list, default=None ):

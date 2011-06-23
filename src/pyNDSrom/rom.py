@@ -5,9 +5,10 @@ import cfg, ui
 
 class RomInfo:
     '''Rom info'''
-    def __init__( self, release_id, database ):
+    def __init__( self, release_id, database, config ):
         self.relid           = release_id
         self.database        = database
+        self.config          = config
         self.name            = None
         self.publisher       = None
         self.released_by     = None
@@ -19,17 +20,30 @@ class RomInfo:
                         )[1:6]
 
     def __str__( self ):
-        return "%4s - %s (%s) [%s]" % ( self.relid, self.name, self.region,
-                self.released_by )
+        return "%4s - %s (%s) [%s]" % ( self.relid, self.name,
+                self.config.region_name( self.region ), self.released_by )
 
 class FileInfo:
     '''File info'''
-    def __init__( self, path, database, config ):
+    def __init__( self, path, database, config, id = None ):
         self.database  = database
         self.config    = config
-        self.path      = path
         self.nds       = None
         self.name_info = None
+        self.db_info   = None
+        self.path      = None
+
+        if path:
+            self.path = path
+        elif id != None:
+            ( release_id, path, size, crc ) = self.database.file_info( id )
+            self.path = path
+            self.db_info = {
+                    'relid' : release_id,
+                    'size'  : size,
+                    'crc'   : crc,
+            }
+            self._parse_name()
 
     def init( self ):
         nds = None
@@ -42,7 +56,9 @@ class FileInfo:
             nds.parse()
 
         self.nds = nds
+        self._parse_name()
 
+    def _parse_name( self ):
         ( relid, name, region ) = parse_filename( self.path )
         self.name_info = {
             'release_id'      : relid,
@@ -67,7 +83,7 @@ class FileInfo:
 
     def is_initialized( self ):
         result = 0
-        if self.nds:
+        if self.nds or self.db_info:
             result = 1
         return result
 
@@ -75,7 +91,7 @@ class FileInfo:
         '''Confirm that file was detected right'''
         result = 0
         if type( relid ) == int:
-            rom_obj = RomInfo( relid, self.database )
+            rom_obj = RomInfo( relid, self.database, self.config )
             print "File '%s' was identified as %s" % (
                     os.path.basename( self.path ),
                     rom_obj
@@ -86,7 +102,7 @@ class FileInfo:
                     os.path.basename( self.path ) )
             index = 0
             for release_id in relid:
-                rom_obj = RomInfo( release_id, self.database )
+                rom_obj = RomInfo( release_id, self.database, self.config )
                 print " %d. %s" % ( index, rom_obj )
                 index += 1
             result = ui.list_question( "Which one?",
@@ -115,51 +131,44 @@ class FileInfo:
             else:
                 search_name = self._ask_name()
                 if search_name:
-                    new_relid_list = self.database.search_known_name(
-                            search_name )
+                    new_relid_list = self.database.search_name(
+                            search_name, table = 'known' )
                     if new_relid_list:
                         relid = self._name_search( new_relid_list )
         return relid
 
+    def is_valid( self ):
+        if not self.is_initialized():
+            self.init()
+        return self.nds.is_valid()
+
     @property
     def normalized_name( self ):
-        return self.name_info['normalized_name']
-
-    def get_rom_info( self ):
-        if self.is_initialized():
+        if not self.is_initialized():
             self.init()
-        rom_info = None
-
-        relid = self.database.search_known_crc( self.nds.crc )
-        if not relid:
-            relid_list = self.database.search_known_name(
-                    self.name_info['normalized_name'],
-                    self.name_info['region'] )
-            if ( self.name_info['release_id'] in relid_list ) or (
-                    self.name_info['release_id'] and self._confirm_file(
-                        self.name_info['release_id'] ) ):
-                relid = self.name_info['release_id']
-            elif relid_list:
-                relid = self._name_search( relid_list )
-            else:
-                search_name = self._ask_name()
-                if search_name:
-                    relid_list = self.database.search_known_name(
-                            search_name )
-                    if relid_list:
-                        relid = self._name_search( relid_list )
-
-        if relid:
-            rom_info = RomInfo( relid, self.database )
-        return rom_info
+        return self.name_info['normalized_name']
 
     @property
     def size( self ):
-        return self.nds.size
+        if not self.is_initialized():
+            self.init()
+        result = None
+        if self.nds:
+            result = self.nds.size
+        elif self.db_info:
+            result = self.db_info['size']
+        return result
 
     @property
     def crc( self ):
-        return self.nds.crc
+        if not self.is_initialized():
+            self.init()
+        result = None
+        if self.nds:
+            result = self.nds.crc
+        elif self.db_info:
+            result = self.db_info['crc']
+        return result
 
     @property
     def size_mb( self ):
@@ -169,25 +178,54 @@ class FileInfo:
             result = "%.2fM" % ( self.nds.size / 1048576.0 )
         return result
 
+    def get_rom_info( self ):
+        if not self.is_initialized():
+            self.init()
+        rom_info = None
+
+        if self.db_info:
+            relid = self.db_info['relid']
+        else:
+            relid = self.database.search_crc( self.crc, 'known' )
+            if not relid:
+                relid_list = self.database.search_name(
+                        self.name_info['normalized_name'],
+                        self.name_info['region'], table = 'known' )
+                if ( self.name_info['release_id'] in relid_list ) or (
+                        self.name_info['release_id'] and self._confirm_file(
+                            self.name_info['release_id'] ) ):
+                    relid = self.name_info['release_id']
+                elif relid_list:
+                    relid = self._name_search( relid_list )
+                else:
+                    search_name = self._ask_name()
+                    if search_name:
+                        relid_list = self.database.search_name(
+                                search_name, table = 'known' )
+                        if relid_list:
+                            relid = self._name_search( relid_list )
+        if relid:
+            rom_info = RomInfo( relid, self.database, self.config )
+        return rom_info
+
     def __str__( self ):
         return '%s (%s)' % ( self.name_info['normalized_name'], self.path )
 
 class Rom:
     '''internal representation of roms'''
 
-    def __init__( self, path, database, config, rom_info = None ):
+    def __init__( self, path, database, config, rom_info = None, file_info = None ):
         self.database  = database
         self.config    = config
+        self.rom_info  = rom_info
+        self.file_info = file_info
 
-        self.file_info = FileInfo( path, database, config )
-
-        if not rom_info:
-            self.file_info.init()
-            self.rom_info  = self.file_info.get_rom_info()
+        if not self.file_info:
+            self.file_info = FileInfo( path, database, config )
 
     def is_valid( self ):
         '''If rom is valid'''
-        return self.file_info.nds.is_valid()
+        return self.file_info.is_valid()
 
     def is_in_db( self ):
         '''Check if file is present in local table'''
@@ -202,7 +240,10 @@ class Rom:
 
     def add_to_db( self ):
         '''Add current rom file to database'''
-        local_info = ( self.rom_info.relid or None, self.file_info.path,
+        if not self.rom_info:
+            self.rom_info  = self.file_info.get_rom_info()
+
+        local_info = ( self.rom_info.relid, self.file_info.path,
                 self.normalized_name, self.file_info.size, self.file_info.crc )
         self.database.add_local( local_info )
 
@@ -222,7 +263,7 @@ class Rom:
         #return dataset
 
     def remove( self ):
-        '''Remove file from disk and local_roms table'''
+        '''Remove file from disk and local table'''
         path = re.sub( r":.*$", '', self.file_info['path'] )
         try:
             os.unlink( path )
@@ -259,7 +300,9 @@ class Rom:
                     #'%s/%s' % ( path, self.filename() ) )
 
     def __str__( self ):
-        return '%s %s' % ( self.rom_info, self.file_info )
+        if not self.rom_info:
+            self.rom_info  = self.file_info.get_rom_info()
+        return '%s' % self.rom_info
 
 class Nds:
     ''' Reads the contents of .nds files '''
@@ -458,14 +501,14 @@ def parse_filename( filename ):
             release_number = int( match.group( 5 ) )
             filename       = match.group( 6 )
 
-    location = None
+    region = None
     for tag in re.findall( r"(\(|\[)(\w+)(\)|\])", filename ):
-        if not location:
-            location = config.region_code( tag[1] )
+        if not region:
+            region = config.region_code( tag[1] )
 
     filename = strip_name( filename )
 
-    return ( release_number, filename, location )
+    return ( release_number, filename, region )
 
 def extension( file_name ):
     '''Returns the extension of specified file'''

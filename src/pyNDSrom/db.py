@@ -67,17 +67,17 @@ class SQLdb():
 
     def search_crc( self, crc, table = 'known' ):
         '''Search known roms by crc value'''
-        release_number = None
+        id_list = None
         cursor = self.database.cursor()
         returned = cursor.execute(
             'SELECT id FROM %s WHERE crc=?' % table,
             ( crc, )
-        ).fetchone()
+        ).fetchall()
         if returned:
-            release_number = returned[0]
+            id_list = [ x[0] for x in returned ]
         cursor.close()
 
-        return release_number
+        return id_list
 
     def search_name( self, name, region = None, table = 'known' ):
         '''Search known roms by name'''
@@ -109,7 +109,7 @@ class SQLdb():
     def remove_local( self, path ):
         '''Remove file from local'''
         cursor = self.database.cursor()
-        cursor.execute( 'DELETE from local where path_to_file LIKE ?', (
+        cursor.execute( 'DELETE from local where path LIKE ?', (
             '%s%%' % path, ) )
         cursor.close()
         return 1

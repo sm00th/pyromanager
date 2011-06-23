@@ -95,10 +95,10 @@ class Cli( cmdln.Cmdln ):
             terms = [ '%' ]
         for term in terms:
             for local_id in self.database.search_name( term, table = 'local' ):
-                r = rom.Rom( None, self.database, self.config, file_info =
+                rom_obj= rom.Rom( None, self.database, self.config, file_info =
                         rom.FileInfo( None, self.database, self.config,
                             local_id ) )
-                print r
+                print rom_obj
         print "subcmd: %s, opts: %s" % ( subcmd, opts )
 
     @cmdln.alias( "u", "up" )
@@ -111,10 +111,16 @@ class Cli( cmdln.Cmdln ):
 
         if not path:
             path = self.config.flashcart
-        rom_list = self.database.search_name( name, table = 'local' )
+
+        rom_list = map(
+                lambda id: rom.Rom( None, self.database, self.config,
+                    file_info = rom.FileInfo( None, self.database, self.config,
+                        id ) ),
+                self.database.search_name( name, table = 'local' )
+        )
         index = 0
-        for rom in rom_list:
-            print " %3d. %s" % ( index, rom )
+        for rom_obj in rom_list:
+            print " %3d. %s" % ( index, rom_obj )
             index += 1
         answer = list_question( "Which one?", range( index ) + [None] )
         if answer != None:
@@ -129,19 +135,23 @@ class Cli( cmdln.Cmdln ):
         ${cmd_option_list}
         """
         for ( entries, crc ) in self.database.find_dupes():
-            id_list = self.database.search_crc( crc, table = 'local' )
-            print "%d duplicates found for %s" % ( entries, rom.RomInfo(
-                id_list[0] ) )
+            rom_list = map(
+                    lambda id: rom.Rom( None, self.database, self.config,
+                        file_info = rom.FileInfo( None, self.database,
+                            self.config, id ) ),
+                    self.database.search_crc( crc, table = 'local' )
+            )
+            print "%d duplicates found for %s" % ( entries, rom_list[0] )
             print "Delete all but one(None - let all be)"
             index = 0
-            for rom in rom_list:
-                print " %d. %s" % ( index, rom.file_info['path'] )
+            for rom_obj in rom_list:
+                print " %d. %s" % ( index, rom_obj.path )
                 index += 1
             answer = list_question( "Which one?", range( index ) + [None] )
             if answer != None:
                 del rom_list[answer]
-                for rom in rom_list:
-                    rom.remove( self.database )
+                for rom_obj in rom_list:
+                    rom_obj.remove()
                     self.database.save()
             print
 

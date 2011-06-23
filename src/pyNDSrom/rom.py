@@ -19,6 +19,11 @@ class RomInfo:
                 self.normalized_name ) = self.database.rom_info( self.relid
                         )[1:6]
 
+    @property
+    def filename( self ):
+        return "%04d - %s (%s).nds" % (
+                int( self.relid ), self.name, self.config.region_name( self.region ) )
+
     def __str__( self ):
         return "%4s - %s (%s) [%s]" % ( self.relid, self.name,
                 self.config.region_name( self.region ), self.released_by )
@@ -186,7 +191,7 @@ class FileInfo:
         if self.db_info:
             relid = self.db_info['relid']
         else:
-            relid = self.database.search_crc( self.crc, 'known' )
+            relid = self.database.search_crc( self.crc, 'known' )[0]
             if not relid:
                 relid_list = self.database.search_name(
                         self.name_info['normalized_name'],
@@ -207,6 +212,25 @@ class FileInfo:
         if relid:
             rom_info = RomInfo( relid, self.database, self.config )
         return rom_info
+
+    def upload( self, path, filename = None ):
+        '''Copy rom to flashcart'''
+        if not filename:
+            filename = re.sub( r"^.*(/|:)", '', self.path )
+
+        if self._is_archived():
+            ( archive_path, nds_name ) = self._split_path()
+            archive = archive_obj( archive_path, self.config )
+            archive.extract( nds_name, path )
+            os.rename( '%s/%s' % ( path, nds_name ),
+                    '%s/%s' % ( path, filename ) )
+        else:
+            shutil.copy( self.path, '%s/%s' % ( path, filename ) )
+
+    def remove( self ):
+        path = re.sub( r":.*$", '', self.path )
+        os.unlink( path )
+        self.database.remove_local( path )
 
     def __str__( self ):
         return '%s (%s)' % ( self.name_info['normalized_name'], self.path )
@@ -248,6 +272,10 @@ class Rom:
         self.database.add_local( local_info )
 
     @property
+    def path( self ):
+        return self.file_info.path
+
+    @property
     def normalized_name( self ):
         result = ''
         if self.rom_info:
@@ -264,12 +292,7 @@ class Rom:
 
     def remove( self ):
         '''Remove file from disk and local table'''
-        path = re.sub( r":.*$", '', self.file_info['path'] )
-        try:
-            os.unlink( path )
-            self.database.remove_local( path )
-        except OSError as exc:
-            print "Failed to remove file: %s" % ( exc )
+        self.file_info.remove()
 
     def filename( self ):
         '''Formatted filename'''
@@ -289,15 +312,7 @@ class Rom:
 
     def upload( self, path ):
         '''Copy rom to flashcart'''
-        self.file_info.upload()
-        #( main_path, archive_file ) = self.archive_path()
-        #if not archive_file:
-            #shutil.copy( main_path, '%s/%s' % ( path, self.filename() ) )
-        #else:
-            #archive = archive_obj( main_path )
-            #archive.extract( archive_file, path )
-            #os.rename( '%s/%s' % ( path, archive_file ),
-                    #'%s/%s' % ( path, self.filename() ) )
+        self.file_info.upload( path, self.rom_info.filename )
 
     def __str__( self ):
         if not self.rom_info:

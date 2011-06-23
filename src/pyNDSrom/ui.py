@@ -78,7 +78,8 @@ class Cli( cmdln.Cmdln ):
         ${cmd_option_list}
         """
 
-        pyNDSrom.file.scan( path, opts )
+        #pyNDSrom.file.scan( path, opts )
+        pyNDSrom.rom.import_path( path, opts )
         print "subcmd: %s, opts: %s" % ( subcmd, opts )
 
     @cmdln.alias( "l", "ls" )

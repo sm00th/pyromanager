@@ -520,11 +520,8 @@ def search( path, config ):
         print "Can't scan path %s: %s" % ( path, exc )
     return result
 
-def import_path( path, opts ):
+def import_path( path, opts, config, database ):
     '''Import roms from path'''
-    config = cfg.Config()
-    config.read_config()
-    database = db.SQLdb( config.db_file )
     for rom_path in search( path, config ):
         rom = Rom( rom_path, database, config )
         if ( opts.full_rescan or not rom.is_in_db() ) and rom.is_valid():

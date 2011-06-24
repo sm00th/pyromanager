@@ -112,7 +112,6 @@ class FileInfo:
                 index += 1
             result = ui.list_question( "Which one?",
                     range(index) + [None] )
-        print
 
         return result
 
@@ -186,12 +185,15 @@ class FileInfo:
     def get_rom_info( self ):
         if not self.is_initialized():
             self.init()
-        rom_info = None
+        relid    = None
 
         if self.db_info:
             relid = self.db_info['relid']
         else:
-            relid = self.database.search_crc( self.crc, 'known' )[0]
+            try:
+                relid = self.database.search_crc( self.crc, 'known' )[0]
+            except TypeError:
+                pass
             if not relid:
                 relid_list = self.database.search_name(
                         self.name_info['normalized_name'],
@@ -209,9 +211,8 @@ class FileInfo:
                                 search_name, table = 'known' )
                         if relid_list:
                             relid = self._name_search( relid_list )
-        if relid:
-            rom_info = RomInfo( relid, self.database, self.config )
-        return rom_info
+        print
+        return RomInfo( relid, self.database, self.config )
 
     def upload( self, path, filename = None ):
         '''Copy rom to flashcart'''
@@ -253,7 +254,7 @@ class Rom:
 
     def is_in_db( self ):
         '''Check if file is present in local table'''
-        return self.database.already_in_local( self.file_info.path, 0 )
+        return self.database.already_in_local( self.file_info.path, 1 )
 
     def is_initialized( self ):
         '''Checks if there is any information in this object'''
@@ -267,9 +268,11 @@ class Rom:
         if not self.rom_info:
             self.rom_info  = self.file_info.get_rom_info()
 
+        relid = None
         local_info = ( self.rom_info.relid, self.file_info.path,
                 self.normalized_name, self.file_info.size, self.file_info.crc )
         self.database.add_local( local_info )
+        self.database.save()
 
     @property
     def path( self ):
@@ -571,10 +574,14 @@ def search( path, config ):
                     if ext == 'nds':
                         result.append( file_path )
                     else:
-                        archive = archive_obj( file_path, config )
-                        archive.scan_files()
-                        for arc_path in archive.full_paths():
-                            result.append( arc_path )
+                        try:
+                            archive = archive_obj( file_path, config )
+                            archive.scan_files()
+                            for arc_path in archive.full_paths():
+                                result.append( arc_path )
+                        except zipfile.BadZipfile as exc:
+                            print "Failed to scan archive %s: %s" % (
+                                    file_path, exc )
     except OSError as exc:
         print "Can't scan path %s: %s" % ( path, exc )
     return result

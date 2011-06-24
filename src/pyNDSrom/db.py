@@ -114,14 +114,14 @@ class SQLdb():
         cursor.close()
         return 1
 
-    def file_info( self, id ):
+    def file_info( self, relid ):
         '''File info from local table'''
         cursor = self.database.cursor()
         result = ( None, None, None, None )
         returned = cursor.execute(
             'SELECT release_id, path, size, crc ' + \
-            'FROM local WHERE id=?',
-            ( id, )
+            'FROM local WHERE relid=?',
+            ( relid, )
         ).fetchone()
         if returned:
             result = returned
@@ -129,7 +129,7 @@ class SQLdb():
 
         return result
 
-    def rom_info( self, id ):
+    def rom_info( self, relid ):
         '''Rom info from known table'''
         cursor = self.database.cursor()
         result = ( None, None, None, None, None, None )
@@ -137,7 +137,7 @@ class SQLdb():
             'SELECT id, name, publisher, released_by, region, ' + \
             'search_name ' + \
             'FROM known WHERE id=?',
-            ( id, )
+            ( relid, )
         ).fetchone()
         if returned:
             result = returned
@@ -185,6 +185,7 @@ class SQLdb():
         return result
 
     def save( self ):
+        '''Commit changes to database'''
         self.database.commit()
 
 class AdvansceneXML():

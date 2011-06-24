@@ -47,7 +47,6 @@ def question_yn( msg, default="y" ):
     return choices[reply][1]
 
 class Cli( cmdln.Cmdln ):
-
     def __init__( self, *args ):
         cmdln.Cmdln.__init__( self, args )
         self.config = cfg.Config()
@@ -93,7 +92,7 @@ class Cli( cmdln.Cmdln ):
             terms = [ '%' ]
         for term in terms:
             for local_id in self.database.search_name( term, table = 'local' ):
-                rom_obj= rom.Rom( None, self.database, self.config, file_info =
+                rom_obj = rom.Rom( None, self.database, self.config, file_info =
                         rom.FileInfo( None, self.database, self.config,
                             local_id ) )
                 print rom_obj

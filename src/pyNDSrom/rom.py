@@ -21,8 +21,10 @@ class RomInfo:
 
     @property
     def filename( self ):
+        '''Formatted filename'''
         return "%04d - %s (%s).nds" % (
-                int( self.relid ), self.name, self.config.region_name( self.region ) )
+                int( self.relid ), self.name, 
+                self.config.region_name( self.region ) )
 
     def __str__( self ):
         return "%4s - %s (%s) [%s]" % ( self.relid, self.name,
@@ -30,7 +32,7 @@ class RomInfo:
 
 class FileInfo:
     '''File info'''
-    def __init__( self, path, database, config, id = None ):
+    def __init__( self, path, database, config, relid = None ):
         self.database  = database
         self.config    = config
         self.nds       = None
@@ -40,8 +42,8 @@ class FileInfo:
 
         if path:
             self.path = path
-        elif id != None:
-            ( release_id, path, size, crc ) = self.database.file_info( id )
+        elif relid != None:
+            ( release_id, path, size, crc ) = self.database.file_info( relid )
             self.path = path
             self.db_info = {
                     'relid' : release_id,
@@ -51,6 +53,7 @@ class FileInfo:
             self._parse_name()
 
     def init( self ):
+        '''Get nds object and prepare name_info'''
         nds = None
         if self._is_archived():
             ( archive_path, nds_name ) = self._split_path()
@@ -64,6 +67,7 @@ class FileInfo:
         self._parse_name()
 
     def _parse_name( self ):
+        '''Parse filename'''
         ( relid, name, region ) = parse_filename( self.path )
         self.name_info = {
             'release_id'      : relid,
@@ -72,6 +76,7 @@ class FileInfo:
         }
 
     def _split_path( self ):
+        '''Split archive path'''
         archive_path = self.path
         file_path    = None
         try:
@@ -81,12 +86,14 @@ class FileInfo:
         return ( archive_path, file_path )
 
     def _is_archived( self ):
+        '''Check if nds file is in archive'''
         result = 0
         if re.search( ':', self.path ):
             result = 1
         return result
 
     def is_initialized( self ):
+        '''Check if object is properly initialized'''
         result = 0
         if self.nds or self.db_info:
             result = 1
@@ -116,6 +123,7 @@ class FileInfo:
         return result
 
     def _ask_name( self ):
+        '''Ask user for rom name'''
         search_name = None
         print "Wasn't able to automatically identify %s" % ( self.path )
         if ui.question_yn( "Want to manually search by name?" ):
@@ -124,6 +132,7 @@ class FileInfo:
         return search_name
 
     def _name_search( self, relid_list ):
+        '''Search database by name'''
         relid = None
         if len( relid_list ) == 1 and self._confirm_file(
                 relid_list[0] ):
@@ -142,18 +151,21 @@ class FileInfo:
         return relid
 
     def is_valid( self ):
+        '''Check if nds is a valid rom-file'''
         if not self.is_initialized():
             self.init()
         return self.nds.is_valid()
 
     @property
     def normalized_name( self ):
+        '''Normalized filename'''
         if not self.is_initialized():
             self.init()
         return self.name_info['normalized_name']
 
     @property
     def size( self ):
+        '''File size in bytes'''
         if not self.is_initialized():
             self.init()
         result = None
@@ -165,6 +177,7 @@ class FileInfo:
 
     @property
     def crc( self ):
+        '''File crc'''
         if not self.is_initialized():
             self.init()
         result = None
@@ -176,16 +189,17 @@ class FileInfo:
 
     @property
     def size_mb( self ):
-        '''Returns size in MB'''
+        '''File size in megabytes'''
         result = 'Unknown'
         if self.nds.rom['size']:
             result = "%.2fM" % ( self.nds.size / 1048576.0 )
         return result
 
     def get_rom_info( self ):
+        '''Get rom info from database'''
         if not self.is_initialized():
             self.init()
-        relid    = None
+        relid = None
 
         if self.db_info:
             relid = self.db_info['relid']
@@ -229,6 +243,7 @@ class FileInfo:
             shutil.copy( self.path, '%s/%s' % ( path, filename ) )
 
     def remove( self ):
+        '''Delete file and remove from local table'''
         path = re.sub( r":.*$", '', self.path )
         os.unlink( path )
         self.database.remove_local( path )
@@ -239,7 +254,8 @@ class FileInfo:
 class Rom:
     '''internal representation of roms'''
 
-    def __init__( self, path, database, config, rom_info = None, file_info = None ):
+    def __init__( self, path, database, config,
+            rom_info = None, file_info = None ):
         self.database  = database
         self.config    = config
         self.rom_info  = rom_info
@@ -268,7 +284,6 @@ class Rom:
         if not self.rom_info:
             self.rom_info  = self.file_info.get_rom_info()
 
-        relid = None
         local_info = ( self.rom_info.relid, self.file_info.path,
                 self.normalized_name, self.file_info.size, self.file_info.crc )
         self.database.add_local( local_info )
@@ -276,42 +291,22 @@ class Rom:
 
     @property
     def path( self ):
+        '''Path to nds file'''
         return self.file_info.path
 
     @property
     def normalized_name( self ):
+        '''Normalized name'''
         result = ''
         if self.rom_info:
             result = self.rom_info.normalized_name
         else:
             result = self.file_info.normalized_name
         return result
-    #def local_data( self ):
-        #'''Returns dataset for db.add_local method'''
-        #dataset = ( self.rom_info['release_number'], self.file_info['path'],
-                #self.normalized_name, self.file_info['size'],
-                #self.file_info['crc32'] )
-        #return dataset
 
     def remove( self ):
         '''Remove file from disk and local table'''
         self.file_info.remove()
-
-    def filename( self ):
-        '''Formatted filename'''
-        # TODO: configurable filename format
-        if self.rom_info['release_number'] or self.rom_info['name']:
-            name = "%04d - %s (%s).nds" % (
-                int( self.rom_info['release_number'] ), self.rom_info['name'],
-                    self.rom_info['region'] )
-        else:
-            archive_file = self.archive_path()[1]
-            if archive_file:
-                name = os.path.basename( archive_file )
-            else:
-                name = os.path.basename( self.file_info['path'] )
-
-        return name
 
     def upload( self, path ):
         '''Copy rom to flashcart'''
@@ -363,10 +358,12 @@ class Nds:
 
     @property
     def crc( self ):
+        '''CRC checksum of file'''
         return self.rom['crc32']
 
     @property
     def size( self ):
+        '''Size of file'''
         return self.rom['size']
 
 class Archive:
@@ -390,8 +387,8 @@ class Archive:
     def full_paths( self ):
         '''Returns list of full paths'''
         result = []
-        for file in self.file_list:
-            result.append( '%s:%s' % ( self.path, file ) )
+        for filename in self.file_list:
+            result.append( '%s:%s' % ( self.path, filename ) )
         return result
 
     def get_nds( self, nds_name ):

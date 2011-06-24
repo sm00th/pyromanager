@@ -1,7 +1,6 @@
 '''User interface routines for pyROManager'''
 import cmdln
-import pyNDSrom.file
-import db, cfg
+import db, cfg, rom
 
 def list_question( msg, choice_list, default=None ):
     '''Qustion with multiple choices'''
@@ -78,7 +77,7 @@ class Cli( cmdln.Cmdln ):
         ${cmd_option_list}
         """
 
-        pyNDSrom.file.scan( path, opts )
+        rom.import_path( path, opts, self.config, self.database )
         print "subcmd: %s, opts: %s" % ( subcmd, opts )
 
     @cmdln.alias( "l", "ls" )
@@ -93,8 +92,11 @@ class Cli( cmdln.Cmdln ):
         if not terms:
             terms = [ '%' ]
         for term in terms:
-            for rom in self.database.local_roms_name( term ):
-                print rom
+            for local_id in self.database.search_name( term, table = 'local' ):
+                rom_obj= rom.Rom( None, self.database, self.config, file_info =
+                        rom.FileInfo( None, self.database, self.config,
+                            local_id ) )
+                print rom_obj
         print "subcmd: %s, opts: %s" % ( subcmd, opts )
 
     @cmdln.alias( "u", "up" )
@@ -107,10 +109,16 @@ class Cli( cmdln.Cmdln ):
 
         if not path:
             path = self.config.flashcart
-        rom_list = self.database.local_roms_name( name )
+
+        rom_list = map(
+                lambda id: rom.Rom( None, self.database, self.config,
+                    file_info = rom.FileInfo( None, self.database, self.config,
+                        id ) ),
+                self.database.search_name( name, table = 'local' )
+        )
         index = 0
-        for rom in rom_list:
-            print " %3d. %s" % ( index, rom )
+        for rom_obj in rom_list:
+            print " %3d. %s" % ( index, rom_obj )
             index += 1
         answer = list_question( "Which one?", range( index ) + [None] )
         if answer != None:
@@ -124,20 +132,25 @@ class Cli( cmdln.Cmdln ):
         ${cmd_usage}
         ${cmd_option_list}
         """
-        for crc32 in self.database.find_dupes():
-            rom_list = self.database.local_roms_crc32( crc32[1] )
-            print "%d duplicates found for %s" % ( crc32[0], rom_list[0] )
+        for ( entries, crc ) in self.database.find_dupes():
+            rom_list = map(
+                    lambda id: rom.Rom( None, self.database, self.config,
+                        file_info = rom.FileInfo( None, self.database,
+                            self.config, id ) ),
+                    self.database.search_crc( crc, table = 'local' )
+            )
+            print "%d duplicates found for %s" % ( entries, rom_list[0] )
             print "Delete all but one(None - let all be)"
             index = 0
-            for rom in rom_list:
-                print " %d. %s" % ( index, rom.file_info['path'] )
+            for rom_obj in rom_list:
+                print " %d. %s" % ( index, rom_obj.path )
                 index += 1
             answer = list_question( "Which one?", range( index ) + [None] )
             if answer != None:
                 del rom_list[answer]
-                for rom in rom_list:
-                    rom.remove( self.database )
-
+                for rom_obj in rom_list:
+                    rom_obj.remove()
+                    self.database.save()
             print
 
     @cmdln.option( "-f", "--force", action = "store_true",
@@ -149,10 +162,11 @@ class Cli( cmdln.Cmdln ):
         ${cmd_option_list}
         """
 
-        xml = pyNDSrom.db.AdvansceneXML( self.config.xml_file )
+        xml = db.AdvansceneXML( self.config.xml_file, self.config )
         if xml.update() or opts.force:
             xml.parse()
             self.database.import_known( xml )
+            self.database.save()
             print "Database updated"
         else:
             print "Already up to date"

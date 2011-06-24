@@ -35,49 +35,6 @@ def search( path, config ):
         print "Can't scan path %s: %s" % ( path, exc )
     return result
 
-def strip_name( name ):
-    '''Strip unnecessary information'''
-    name = re.sub( r"(\(|\[)[^\(\)\[\]]*(\)|\])" , ''  , name )
-    name = re.sub( r"(^|\s)(the|and|a|\&)(\s|$)" , ' ' , name )
-    name = re.sub( r"[^\w\d\s]"                  , ''  , name )
-    name = re.sub( r"\s+"                        , ' ' , name )
-    name = name.strip()
-
-    return name
-
-def parse_filename( filename ):
-    '''Parse rom name'''
-    config = cfg.Config()
-    config.read_config()
-    release_number = None
-
-    filename = filename.lower()
-    filename = re.sub( r"^.*(/|:)" , ''  , filename )
-    filename = re.sub( "\.[^.]+$"  , ''  , filename )
-    filename = re.sub( "_"         , ' ' , filename )
-
-    match = re.match(
-        r"((\[|\()?(\d+)(\]|\))|(\d+)\s*-\s*)\s*(.*)",
-        filename
-    )
-
-    if match:
-        if match.group( 3 ):
-            release_number = int( match.group( 3 ) )
-            filename       = match.group( 6 )
-        elif match.group( 5 ):
-            release_number = int( match.group( 5 ) )
-            filename       = match.group( 6 )
-
-    location = None
-    for tag in re.findall( r"(\(|\[)(\w+)(\)|\])", filename ):
-        if not location:
-            location = config.region_code( tag[1] )
-
-    filename = strip_name( filename )
-
-    return [ release_number, filename, location ]
-
 def byte_to_string( byte_string ):
     '''Decodes bytestring as string'''
     string = ''

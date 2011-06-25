@@ -3,6 +3,8 @@ import os
 import subprocess
 import ConfigParser
 
+DEFAULT_RC = os.path.expanduser( "~/.pyROManager.rc" )
+
 def check_bin( binfile ):
     '''Determine if binary is somewhere in $PATH'''
     exists = 1
@@ -15,14 +17,18 @@ def check_bin( binfile ):
 
 class Config:
     '''Config class'''
-    def __init__( self, rc_file = "~/.pyROManager.rc" ):
+    def __init__( self, rc_file = DEFAULT_RC ):
         self.rc_file = os.path.expanduser( rc_file )
         self._paths   = {
                 'conf_dir'  : os.path.expanduser( "~/.pyROManager" ),
+                'saves_dir' : 'saves',
                 'db_file'   : 'pyro.db',
                 'xml_file'  : 'advanscene.xml',
                 'tmp_dir'   : '/tmp',
                 'flashcart' : '/mnt/ds',
+        }
+        self._saves = {
+                'extension' : 'sav'
         }
         self._locations = {
             0  : ( 'Europe'      , 'EUR'   , 'E' ),
@@ -41,9 +47,15 @@ class Config:
     def write_config( self ):
         '''Dump current config to file'''
         parser = ConfigParser.ConfigParser()
+
         parser.add_section( 'paths' )
         for file_type in [ 'db_file', 'xml_file', 'flashcart' ]:
             parser.set( 'paths', file_type, self._paths[file_type] )
+
+        parser.add_section( 'saves' )
+        for ( save_opt, save_val ) in self._saves.iteritems():
+            parser.set( 'saves', save_opt, save_val )
+
         parser.write( file( self.rc_file, 'w' ) )
 
     def read_config( self ):
@@ -51,17 +63,15 @@ class Config:
         parser = ConfigParser.ConfigParser()
         if os.path.isfile( self.rc_file ):
             parser.read( self.rc_file )
-        else:
-            # FIXME: will write new config even if it user-specified
+        elif self.rc_file == DEFAULT_RC:
             self.write_config()
             return
 
-        if parser.has_option( 'paths', 'db_file' ):
-            self._paths['db_file'] = parser.get( 'paths', 'db_file' )
-        if parser.has_option( 'paths', 'xml_file' ):
-            self._paths['xml_file'] = parser.get( 'paths', 'xml_file' )
-        if parser.has_option( 'paths', 'flashcart' ):
-            self._paths['flashcart'] = parser.get( 'paths', 'flashcart' )
+        for file_type in [ 'db_file', 'xml_file', 'flashcart' ]:
+            if parser.has_option( 'paths', file_type ):
+                self._paths[file_type] = parser.get( 'paths', file_type )
+        for save_opt in self._saves.keys():
+            self._saves[save_opt] = parser.get( 'saves', save_opt )
 
     @property
     def config_dir( self ):
@@ -87,6 +97,16 @@ class Config:
     def xml_file( self ):
         '''Full path to advanscene xml file'''
         return '%s/%s' % ( self._paths['conf_dir'], self._paths['xml_file'] )
+
+    @property
+    def saves_dir( self ):
+        '''Full path to saves directory'''
+        return '%s/%s' % ( self._paths['conf_dir'], self._paths['saves_dir'] )
+
+    @property
+    def save_ext( self ):
+        '''Savefile extension'''
+        return self._saves['extension']
 
     @property
     def extensions( self ):

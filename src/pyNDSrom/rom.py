@@ -3,7 +3,7 @@ import os, re, zipfile, subprocess, shutil
 import struct, binascii
 import cfg
 # TODO: should be methods of ui obj
-from ui import question_yn, list_question
+import ui
 
 class RomInfo:
     '''Rom info'''
@@ -110,7 +110,7 @@ class FileInfo:
                     os.path.basename( self.path ),
                     rom_obj
             )
-            result = question_yn( "Is this correct?" )
+            result = ui.question_yn( "Is this correct?" )
         elif type( relid ) == list:
             print "File '%s' can be one of the following:" % (
                     os.path.basename( self.path ) )
@@ -119,7 +119,7 @@ class FileInfo:
                 rom_obj = RomInfo( release_id, self.database, self.config )
                 print " %d. %s" % ( index, rom_obj )
                 index += 1
-            result = list_question( "Which one?",
+            result = ui.list_question( "Which one?",
                     range(index) + [None] )
         print
 
@@ -129,7 +129,7 @@ class FileInfo:
         '''Ask user for rom name'''
         search_name = None
         print "Wasn't able to automatically identify %s" % ( self.path )
-        if question_yn( "Want to manually search by name?" ):
+        if ui.question_yn( "Want to manually search by name?" ):
             print "Enter name: ",
             search_name = raw_input().lower()
         return search_name

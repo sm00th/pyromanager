@@ -183,8 +183,8 @@ class Cli( cmdln.Cmdln ):
                 self.database.remove_local( path )
         self.database.save()
 
-    @cmdln.alias( "s", "sm" )
-    def do_savemanager( self, subcmd, opts, command, *path ):
+    @cmdln.alias( "bs" )
+    def do_backupsaves( self, subcmd, opts, *path ):
         """${cmd_name}: Savefile manager
 
         ${cmd_usage}
@@ -196,25 +196,24 @@ class Cli( cmdln.Cmdln ):
         else:
             path = self.config.flashcart
 
-        if command == 'backup':
-            for nds_path in rom.search( path, self.config ):
-                save_path = rom.get_save( nds_path, self.config.save_ext )
-                if save_path:
-                    local_id = rom.identify( nds_path, self.database )
-                    if local_id:
-                        relid = None
-                        try:
-                            relid = self.database.search_local( 'release_id',
-                                    'id', local_id )[0]
-                        except TypeError:
-                            pass
-                        save_mtime = os.stat( save_path ).st_mtime
-                        # TODO: Save class?
-                        m_savename = '%s_%d_%d.sav' % ( relid, local_id,
-                                save_mtime )
-                        local_save = '%s/%s' % ( self.config.saves_dir,
-                                m_savename )
-                        if not os.path.exists( local_save ):
-                            print "Backing up", save_path, m_savename
-                            rom.mkdir( self.config.saves_dir )
-                            shutil.copy( save_path, local_save )
+        for nds_path in rom.search( path, self.config ):
+            save_path = rom.get_save( nds_path, self.config.save_ext )
+            if save_path:
+                local_id = rom.identify( nds_path, self.database )
+                if local_id:
+                    relid = None
+                    try:
+                        relid = self.database.search_local( 'release_id',
+                                'id', local_id )[0]
+                    except TypeError:
+                        pass
+                    save_mtime = os.stat( save_path ).st_mtime
+                    # TODO: Save class?
+                    m_savename = '%s_%d_%d.sav' % ( relid, local_id,
+                            save_mtime )
+                    local_save = '%s/%s' % ( self.config.saves_dir,
+                            m_savename )
+                    if not os.path.exists( local_save ):
+                        print "Backing up", save_path, m_savename
+                        rom.mkdir( self.config.saves_dir )
+                        shutil.copy( save_path, local_save )

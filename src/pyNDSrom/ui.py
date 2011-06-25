@@ -1,5 +1,5 @@
 '''User interface routines for pyROManager'''
-import cmdln, os, shutil
+import cmdln, os, shutil, time
 import db, cfg, rom
 
 def list_question( msg, choice_list, default=None ):
@@ -120,6 +120,18 @@ class Cli( cmdln.Cmdln ):
         answer = list_question( "Which one?", range( index ) + [None] )
         if answer != None:
             rom_list[answer].upload( path )
+            save_list = rom_list[answer].get_saves()
+            if save_list:
+                print "Savefiles found for this rom:"
+                index = 0
+                for savefile in save_list:
+                    print " %d. %s" % ( index, time.strftime( "%x %X",
+                        time.localtime( float( savefile[2] ) ) ) )
+                    index += 1
+                answer = list_question( "Which one should be uploaded?", range( index ) + [None] )
+                if answer != None:
+                    ( localfile, remotename, mtime ) = save_list[answer]
+                    shutil.copy( localfile, '%s/%s' % ( path, remotename ) )
 
     @cmdln.alias( "rd" )
     def do_rmdupes( self, subcmd, opts ):

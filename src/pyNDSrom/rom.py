@@ -57,7 +57,7 @@ class FileInfo:
     def init( self ):
         '''Get nds object and prepare name_info'''
         nds = None
-        if self._is_archived():
+        if self.is_archived():
             ( archive_path, nds_name ) = self._split_path()
             archive = archive_obj( archive_path, self.config )
             nds = archive.get_nds( nds_name )
@@ -87,7 +87,7 @@ class FileInfo:
             pass
         return ( archive_path, file_path )
 
-    def _is_archived( self ):
+    def is_archived( self ):
         '''Check if nds file is in archive'''
         result = 0
         if re.search( ':', self.path ):
@@ -179,6 +179,18 @@ class FileInfo:
         return result
 
     @property
+    def size_mb( self ):
+        '''File size in megabytes'''
+        if not self.is_initialized():
+            self.init()
+        result = 'Unknown'
+        if self.nds:
+            result = "%.2fM" % ( self.nds.size / 1048576.0 )
+        elif self.db_info:
+            result = "%.2fM" % ( self.db_info['size'] / 1048576.0 )
+        return result
+
+    @property
     def crc( self ):
         '''File crc'''
         if not self.is_initialized():
@@ -188,14 +200,6 @@ class FileInfo:
             result = self.nds.crc
         elif self.db_info:
             result = self.db_info['crc']
-        return result
-
-    @property
-    def size_mb( self ):
-        '''File size in megabytes'''
-        result = 'Unknown'
-        if self.nds.rom['size']:
-            result = "%.2fM" % ( self.nds.size / 1048576.0 )
         return result
 
     def get_rom_info( self ):
@@ -235,7 +239,7 @@ class FileInfo:
         if not filename:
             filename = re.sub( r"^.*(/|:)", '', self.path )
 
-        if self._is_archived():
+        if self.is_archived():
             ( archive_path, nds_name ) = self._split_path()
             archive = archive_obj( archive_path, self.config )
             archive.extract( nds_name, path )
@@ -314,10 +318,37 @@ class Rom:
         '''Copy rom to flashcart'''
         self.file_info.upload( path, self.rom_info.filename )
 
+    def get_saves( self ):
+        '''Check if rom has any backed up saves'''
+        save_list = []
+        if self.rom_info:
+            relid   = self.rom_info.relid
+            localid = self.database.search_local( 'id', 'path',
+                    self.file_info.path )[0]
+
+            remote_name = re.sub( 'nds', self.config.save_ext,
+                    self.rom_info.filename, flags = re.IGNORECASE )
+            for savefile in os.listdir( self.config.saves_dir ):
+                if not( os.path.isfile( '%s/%s' % ( self.config.saves_dir,
+                    savefile ) ) and re.match( r"\d+_\d+_\d+.sav", savefile,
+                        flags = re.IGNORECASE ) ):
+                    continue
+                ( s_relid, s_lid, s_mtime ) = savefile[0:-4].split( '_' )
+                if s_relid == relid or s_lid == localid:
+                    save_list.append( ( '%s/%s' % ( self.config.saves_dir,
+                        savefile ), remote_name, s_mtime ) )
+        return save_list
+
     def __str__( self ):
         if not self.rom_info:
             self.rom_info  = self.file_info.get_rom_info()
-        return '%s' % self.rom_info
+        string = [ '%s' % self.rom_info ]
+        if self.file_info:
+            string.append( self.file_info.size_mb )
+            if self.file_info.is_archived():
+                string.append( '[Archive]' )
+
+        return ' '.join( string )
 
 class Nds:
     ''' Reads the contents of .nds files '''

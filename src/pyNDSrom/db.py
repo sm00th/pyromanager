@@ -120,7 +120,7 @@ class SQLdb():
         result = ( None, None, None, None )
         returned = cursor.execute(
             'SELECT release_id, path, size, crc ' + \
-            'FROM local WHERE relid=?',
+            'FROM local WHERE id=?',
             ( relid, )
         ).fetchone()
         if returned:
@@ -166,6 +166,16 @@ class SQLdb():
         ).fetchall()
         if dupes:
             result = dupes
+        cursor.close()
+        return result
+
+    def path_list( self ):
+        '''Returns the list of all paths in local'''
+        result = []
+        cursor = self.database.cursor()
+        paths = cursor.execute( 'SELECT path FROM local').fetchall()
+        if paths:
+            result = [ path[0] for path in paths ]
         cursor.close()
         return result
 

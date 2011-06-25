@@ -119,6 +119,7 @@ class FileInfo:
                 index += 1
             result = ui.list_question( "Which one?",
                     range(index) + [None] )
+        print
 
         return result
 
@@ -225,7 +226,6 @@ class FileInfo:
                                 search_name, table = 'known' )
                         if relid_list:
                             relid = self._name_search( relid_list )
-        print
         return RomInfo( relid, self.database, self.config )
 
     def upload( self, path, filename = None ):

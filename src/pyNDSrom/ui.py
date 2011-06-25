@@ -1,5 +1,5 @@
 '''User interface routines for pyROManager'''
-import cmdln
+import cmdln, os
 import db, cfg, rom
 
 def list_question( msg, choice_list, default=None ):
@@ -77,7 +77,6 @@ class Cli( cmdln.Cmdln ):
         """
 
         rom.import_path( path, opts, self.config, self.database )
-        print "subcmd: %s, opts: %s" % ( subcmd, opts )
 
     @cmdln.alias( "l", "ls" )
     @cmdln.option( "-k", "--known", action = "store_true",
@@ -96,7 +95,6 @@ class Cli( cmdln.Cmdln ):
                         rom.FileInfo( None, self.database, self.config,
                             local_id ) )
                 print rom_obj
-        print "subcmd: %s, opts: %s" % ( subcmd, opts )
 
     @cmdln.alias( "u", "up" )
     def do_upload( self, subcmd, opts, name, *path ):
@@ -122,8 +120,6 @@ class Cli( cmdln.Cmdln ):
         answer = list_question( "Which one?", range( index ) + [None] )
         if answer != None:
             rom_list[answer].upload( path )
-            #print "%s.upload( %s )" % ( rom_list[answer], path )
-        print "subcmd: %s, opts: %s" % ( subcmd, opts )
 
     def do_rmdupes( self, subcmd, opts ):
         """${cmd_name}: remove duplicate roms from disk
@@ -169,4 +165,17 @@ class Cli( cmdln.Cmdln ):
             print "Database updated"
         else:
             print "Already up to date"
-        print "subcmd: %s, opts: %s" % ( subcmd, opts )
+
+    def do_clean( self, subcmd, opts ):
+        """${cmd_name}: Find and remove from db files that are no longer
+        present
+
+        ${cmd_usage}
+        ${cmd_option_list}
+        """
+
+        for path in self.database.path_list():
+            path = path.split( ':' )[0]
+            if not os.path.exists( path ):
+                self.database.remove_local( path )
+        self.database.save()

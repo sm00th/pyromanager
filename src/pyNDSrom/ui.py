@@ -1,5 +1,5 @@
 '''User interface routines for pyROManager'''
-import cmdln, os, shutil, time
+import cmdln, os
 import db, cfg, rom
 
 def list_question( msg, choice_list, default=None ):
@@ -218,7 +218,6 @@ class Cli( cmdln.Cmdln ):
                     except TypeError:
                         pass
                     save_mtime = os.stat( save_path ).st_mtime
-                    # TODO: Save class?
                     save = rom.SaveFile( relid, local_id, save_mtime, None,
                             self.config )
                     if not save.stored():

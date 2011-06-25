@@ -2,8 +2,8 @@
 import re, os, time, shutil
 import urllib2
 import sqlite3
-import rom
 import cfg
+from rom import mkdir, strip_name, Zip
 from xml.dom import minidom
 
 def node_text( node_list ):
@@ -16,11 +16,9 @@ def node_text( node_list ):
 
 class SQLdb():
     '''Sqlite3 db interface'''
-    def __init__( self, db_file = None, config = None ):
-        if not config:
-            config = cfg.Config()
+    def __init__( self, db_file = None, config = cfg.Config() ):
         config.read_config()
-        rom.mkdir( config.config_dir )
+        mkdir( config.config_dir )
         self.database = sqlite3.connect( db_file or config.db_file )
 
     def __del__( self ):
@@ -67,8 +65,8 @@ class SQLdb():
 
     def search_crc( self, crc, table = 'known' ):
         '''Search known roms by crc value'''
-        id_list = None
-        cursor = self.database.cursor()
+        id_list  = None
+        cursor   = self.database.cursor()
         returned = cursor.execute(
             'SELECT id FROM %s WHERE crc=?' % table,
             ( crc, )
@@ -104,6 +102,18 @@ class SQLdb():
             result = [ x[0] for x in returned ]
         cursor.close()
 
+        return result
+
+    def search_local( self, retval, column, search_val ):
+        '''Search local table for roms of specific size'''
+        result  = []
+        cursor  = self.database.cursor()
+        id_list = cursor.execute(
+            'SELECT %s FROM local WHERE %s=?' % ( retval, column ), (
+                search_val, ) ).fetchall()
+        if id_list:
+            result = [ local_id[0] for local_id in id_list ]
+        cursor.close()
         return result
 
     def remove_local( self, path ):
@@ -207,13 +217,13 @@ class AdvansceneXML():
 
     def update( self ):
         '''Download new xml from advanscene'''
-        rom.mkdir( self.config.config_dir )
+        mkdir( self.config.config_dir )
         updated    = 0
         dat_url    = 'http://advanscene.com/offline/datas/ADVANsCEne_NDS_S.zip'
         zip_path   = '%s/%s' % ( self.config.tmp_dir, dat_url.split('/')[-1] )
 
         url_handler = urllib2.urlopen( dat_url )
-        if not( os.path.exists( self.config.xml_file ) )or time.gmtime(
+        if not( os.path.exists( self.config.xml_file ) ) or time.gmtime(
                 os.stat( self.config.xml_file ).st_mtime ) < time.strptime(
                 url_handler.info().getheader( 'Last-Modified' ),
                 '%a, %d %b %Y %H:%M:%S %Z' ):
@@ -221,7 +231,7 @@ class AdvansceneXML():
             file_handler = open( zip_path, 'w' )
             file_handler.write( url_handler.read() )
             file_handler.close()
-            archive = rom.Zip( zip_path, self.config )
+            archive = Zip( zip_path, self.config )
             archive.scan_files( 'xml' )
             archive_xml = archive.file_list[0]
             archive.extract( archive_xml, self.config.tmp_dir )
@@ -252,7 +262,7 @@ class AdvansceneXML():
         release_number = int( node_text(
                 node.getElementsByTagName( 'releaseNumber' )[0].childNodes ) )
         crc = self.get_crc( node )
-        normalized_name = rom.strip_name( title.lower() )
+        normalized_name = strip_name( title.lower() )
         return ( release_number, title, crc, publisher, released_by,
                 region, normalized_name )
 

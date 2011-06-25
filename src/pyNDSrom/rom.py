@@ -1,7 +1,9 @@
 '''Rom info'''
 import os, re, zipfile, subprocess, shutil
 import struct, binascii
-import cfg, ui
+import cfg
+# TODO: should be methods of ui obj
+from ui import question_yn, list_question
 
 class RomInfo:
     '''Rom info'''
@@ -108,7 +110,7 @@ class FileInfo:
                     os.path.basename( self.path ),
                     rom_obj
             )
-            result = ui.question_yn( "Is this correct?" )
+            result = question_yn( "Is this correct?" )
         elif type( relid ) == list:
             print "File '%s' can be one of the following:" % (
                     os.path.basename( self.path ) )
@@ -117,7 +119,7 @@ class FileInfo:
                 rom_obj = RomInfo( release_id, self.database, self.config )
                 print " %d. %s" % ( index, rom_obj )
                 index += 1
-            result = ui.list_question( "Which one?",
+            result = list_question( "Which one?",
                     range(index) + [None] )
         print
 
@@ -127,7 +129,7 @@ class FileInfo:
         '''Ask user for rom name'''
         search_name = None
         print "Wasn't able to automatically identify %s" % ( self.path )
-        if ui.question_yn( "Want to manually search by name?" ):
+        if question_yn( "Want to manually search by name?" ):
             print "Enter name: ",
             search_name = raw_input().lower()
         return search_name
@@ -525,6 +527,7 @@ def parse_filename( filename ):
 
     return ( release_number, filename, region )
 
+# FIXME: os.path.splitext
 def extension( file_name ):
     '''Returns the extension of specified file'''
     result = ''
@@ -589,6 +592,38 @@ def import_path( path, opts, config, database ):
         rom = Rom( rom_path, database, config )
         if ( opts.full_rescan or not rom.is_in_db() ) and rom.is_valid():
             rom.add_to_db()
+
+def get_save( path, save_ext = 'sav' ):
+    '''Search for savefile of given rom'''
+    ( save_path, nds_name ) = os.path.split( path )
+    nds_name = os.path.splitext( nds_name )[0]
+    for filename in os.listdir( save_path ):
+        if os.path.isfile( '%s/%s' % ( save_path, filename ) ) and ( 
+                nds_name in filename ):
+            if( extension( filename ) == save_ext ):
+                return '%s/%s' % ( save_path, filename )
+
+def identify( path, database ):
+    '''Get local id by path'''
+    local_id = None
+    relid = parse_filename( path )[0]
+    if relid:
+        id_list = database.search_local( 'id', 'release_id', relid )
+        if id_list:
+            local_id = id_list[0]
+    else:
+        id_list = database.search_local( 'id', 'size', os.path.getsize( path ) )
+        if id_list and len( id_list ) == 1:
+            local_id = id_list[0]
+        else:
+            file_handler = open( path, 'rb' )
+            crc = binascii.crc32( file_handler.read() ) & 0xFFFFFFFF
+            file_handler.close()
+            id_list = database.search_local( 'id', 'crc', crc )
+            if id_list:
+                local_id = id_list[0]
+
+    return local_id
 
 def mkdir( path ):
     '''Create dir if not exists'''

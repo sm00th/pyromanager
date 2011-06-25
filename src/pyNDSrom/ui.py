@@ -121,6 +121,7 @@ class Cli( cmdln.Cmdln ):
         if answer != None:
             rom_list[answer].upload( path )
 
+    @cmdln.alias( "rd" )
     def do_rmdupes( self, subcmd, opts ):
         """${cmd_name}: remove duplicate roms from disk
 
@@ -148,6 +149,7 @@ class Cli( cmdln.Cmdln ):
                     self.database.save()
             print
 
+    @cmdln.alias( "udb" )
     @cmdln.option( "-f", "--force", action = "store_true",
             help = "Force update even if xml is up to date" )
     def do_updatedb( self, subcmd, opts ):
@@ -166,6 +168,7 @@ class Cli( cmdln.Cmdln ):
         else:
             print "Already up to date"
 
+    @cmdln.alias( "c", "cdb" )
     def do_cleandb( self, subcmd, opts ):
         """${cmd_name}: Find and remove from db files that are no longer
         present

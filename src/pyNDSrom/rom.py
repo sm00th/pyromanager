@@ -1,6 +1,6 @@
 '''Rom info'''
 import os, re, zipfile, subprocess, shutil
-import struct, binascii
+import struct, binascii, time
 import cfg
 # TODO: should be methods of ui obj
 import ui
@@ -89,21 +89,17 @@ class FileInfo:
 
     def is_archived( self ):
         '''Check if nds file is in archive'''
-        result = 0
         if re.search( ':', self.path ):
-            result = 1
-        return result
+            return True
 
     def is_initialized( self ):
         '''Check if object is properly initialized'''
-        result = 0
         if self.nds or self.db_info:
-            result = 1
-        return result
+            return True
 
     def _confirm_file( self, relid = None ):
         '''Confirm that file was detected right'''
-        result = 0
+        result = None
         if type( relid ) == int:
             rom_obj = RomInfo( relid, self.database, self.config )
             print "File '%s' was identified as %s" % (
@@ -280,10 +276,8 @@ class Rom:
 
     def is_initialized( self ):
         '''Checks if there is any information in this object'''
-        result = 0
         if self.file_info.is_initialized() or self.rom_info:
-            result = 1
-        return result
+            return True
 
     def add_to_db( self ):
         '''Add current rom file to database'''
@@ -328,6 +322,7 @@ class Rom:
 
             remote_name = re.sub( 'nds', self.config.save_ext,
                     self.rom_info.filename, flags = re.IGNORECASE )
+            mkdir( self.config.saves_dir )
             for savefile in os.listdir( self.config.saves_dir ):
                 if not( os.path.isfile( '%s/%s' % ( self.config.saves_dir,
                     savefile ) ) and re.match( r"\d+_\d+_\d+.sav", savefile,
@@ -335,8 +330,8 @@ class Rom:
                     continue
                 ( s_relid, s_lid, s_mtime ) = savefile[0:-4].split( '_' )
                 if s_relid == relid or s_lid == localid:
-                    save_list.append( ( '%s/%s' % ( self.config.saves_dir,
-                        savefile ), remote_name, s_mtime ) )
+                    save_list.append( SaveFile( s_relid, s_lid, s_mtime,
+                        remote_name, self.config ) )
         return save_list
 
     def __str__( self ):
@@ -349,6 +344,34 @@ class Rom:
                 string.append( '[Archive]' )
 
         return ' '.join( string )
+
+class SaveFile:
+    '''Rom savefile'''
+    def __init__( self, relid, lid, mtime, filename, config ):
+        self.relid       = int( relid )
+        self.lid         = int( lid )
+        self.mtime       = float( mtime )
+        self.local_name  = '%s/%d_%d_%d.sav' % ( config.saves_dir, self.relid,
+                self.lid, self.mtime )
+        self.remote_name = filename
+
+        mkdir( config.saves_dir )
+
+    def stored( self ):
+        '''Check if file is stored already'''
+        if os.path.exists( self.local_name ):
+            return True
+
+    def copy_from( self, file_path ):
+        '''Copy save from file'''
+        shutil.copy( file_path, self.local_name )
+
+    def upload( self, path ):
+        '''Upload savefile to specified path'''
+        shutil.copy( self.local_name, '%s/%s' % ( path, self.remote_name ) )
+
+    def __str__( self ):
+        return time.strftime( "%x %X", time.localtime( self.mtime ) )
 
 class Nds:
     ''' Reads the contents of .nds files '''
@@ -408,10 +431,8 @@ class Archive:
 
     def is_valid( self ):
         '''Check if archive contains any nds files'''
-        result = 0
         if len( self.file_list ):
-            result = 1
-        return result
+            return True
 
     def extract( self, archive_file, path ):
         '''Extract specified file to path'''
@@ -470,8 +491,6 @@ class Zip7( Archive ):
                     self.file_list.append( filename )
         list_archive.wait()
 
-        return 1
-
     def extract( self, archive_file, path ):
         '''Extract specified file to path'''
         decompress = subprocess.Popen( [ '7z', 'e', '-y', '-o%s' % path,
@@ -492,8 +511,6 @@ class Rar( Archive ):
             if re.search( "\.%s$" % ext, filename, flags = re.IGNORECASE ):
                 self.file_list.append( filename )
         list_archive.wait()
-
-        return 1
 
     def extract( self, archive_file, path ):
         '''Extract specified file to path'''

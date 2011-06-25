@@ -61,7 +61,6 @@ class SQLdb():
                 data
             )
         cursor.close()
-        return 1
 
     def search_crc( self, crc, table = 'known' ):
         '''Search known roms by crc value'''
@@ -122,7 +121,6 @@ class SQLdb():
         cursor.execute( 'DELETE from local where path LIKE ?', (
             '%s%%' % path, ) )
         cursor.close()
-        return 1
 
     def file_info( self, relid ):
         '''File info from local table'''
@@ -164,7 +162,6 @@ class SQLdb():
             'values ( ?, ?, ?, ?, ? )',
             local_info
         )
-        return 1
 
     def find_dupes( self ):
         '''Search for duplicate roms'''
@@ -191,7 +188,7 @@ class SQLdb():
 
     def already_in_local( self, path, include_unindentified = 0 ):
         '''Check if path is already present in local'''
-        result = 0
+        result = False
         cursor = self.database.cursor()
         ret = cursor.execute(
             'SELECT id, release_id FROM local ' + \
@@ -200,7 +197,7 @@ class SQLdb():
         ).fetchone()
         if ret:
             if ret[1] or include_unindentified:
-                result = 1
+                result = True
         cursor.close()
         return result
 

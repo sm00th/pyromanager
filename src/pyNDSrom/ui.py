@@ -26,8 +26,8 @@ def list_question( msg, choice_list, default=None ):
 def question_yn( msg, default="y" ):
     '''Yes/No question'''
     choices = {
-        'y' : [ 'y', 1 ],
-        'n' : [ 'n', 0 ],
+        'y' : [ 'y', True ],
+        'n' : [ 'n', False ],
     }
     choices[default][0] = choices[default][0].upper()
     choice_list = []
@@ -125,13 +125,11 @@ class Cli( cmdln.Cmdln ):
                 print "Savefiles found for this rom:"
                 index = 0
                 for savefile in save_list:
-                    print " %d. %s" % ( index, time.strftime( "%x %X",
-                        time.localtime( float( savefile[2] ) ) ) )
+                    print " %d. %s" % ( index, savefile )
                     index += 1
                 answer = list_question( "Which one should be uploaded?", range( index ) + [None] )
                 if answer != None:
-                    ( localfile, remotename, mtime ) = save_list[answer]
-                    shutil.copy( localfile, '%s/%s' % ( path, remotename ) )
+                    save_list[answer].upload( path )
 
     @cmdln.alias( "rd" )
     def do_rmdupes( self, subcmd, opts ):
@@ -221,11 +219,8 @@ class Cli( cmdln.Cmdln ):
                         pass
                     save_mtime = os.stat( save_path ).st_mtime
                     # TODO: Save class?
-                    m_savename = '%s_%d_%d.sav' % ( relid, local_id,
-                            save_mtime )
-                    local_save = '%s/%s' % ( self.config.saves_dir,
-                            m_savename )
-                    if not os.path.exists( local_save ):
-                        print "Backing up", save_path, m_savename
-                        rom.mkdir( self.config.saves_dir )
-                        shutil.copy( save_path, local_save )
+                    save = rom.SaveFile( relid, local_id, save_mtime, None,
+                            self.config )
+                    if not save.stored():
+                        print "Backing up", save_path, save
+                        save.copy_from( save_path )

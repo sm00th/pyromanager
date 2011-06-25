@@ -114,14 +114,14 @@ class SQLdb():
         cursor.close()
         return 1
 
-    def file_info( self, id ):
+    def file_info( self, relid ):
         '''File info from local table'''
         cursor = self.database.cursor()
         result = ( None, None, None, None )
         returned = cursor.execute(
             'SELECT release_id, path, size, crc ' + \
             'FROM local WHERE id=?',
-            ( id, )
+            ( relid, )
         ).fetchone()
         if returned:
             result = returned
@@ -129,7 +129,7 @@ class SQLdb():
 
         return result
 
-    def rom_info( self, id ):
+    def rom_info( self, relid ):
         '''Rom info from known table'''
         cursor = self.database.cursor()
         result = ( None, None, None, None, None, None )
@@ -137,7 +137,7 @@ class SQLdb():
             'SELECT id, name, publisher, released_by, region, ' + \
             'search_name ' + \
             'FROM known WHERE id=?',
-            ( id, )
+            ( relid, )
         ).fetchone()
         if returned:
             result = returned
@@ -169,6 +169,16 @@ class SQLdb():
         cursor.close()
         return result
 
+    def path_list( self ):
+        '''Returns the list of all paths in local'''
+        result = []
+        cursor = self.database.cursor()
+        paths = cursor.execute( 'SELECT path FROM local').fetchall()
+        if paths:
+            result = [ path[0] for path in paths ]
+        cursor.close()
+        return result
+
     def already_in_local( self, path, include_unindentified = 0 ):
         '''Check if path is already present in local'''
         result = 0
@@ -185,6 +195,7 @@ class SQLdb():
         return result
 
     def save( self ):
+        '''Commit changes to database'''
         self.database.commit()
 
 class AdvansceneXML():

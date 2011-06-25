@@ -166,7 +166,7 @@ class Cli( cmdln.Cmdln ):
         else:
             print "Already up to date"
 
-    def do_clean( self, subcmd, opts ):
+    def do_cleandb( self, subcmd, opts ):
         """${cmd_name}: Find and remove from db files that are no longer
         present
 

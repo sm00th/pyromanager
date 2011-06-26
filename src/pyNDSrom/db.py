@@ -1,4 +1,4 @@
-'''Database manipulation module'''
+'''Provides interfaces to databases'''
 import re, os, time, shutil
 import urllib2
 import sqlite3
@@ -6,26 +6,18 @@ import cfg
 from rom import mkdir, strip_name, Zip
 from xml.dom import minidom
 
-def node_text( node_list ):
-    '''Extract text from node'''
-    text = []
-    for node in node_list:
-        if node.nodeType == node.TEXT_NODE:
-            text.append( node.data )
-    return ''.join( text )
-
 class SQLdb():
-    '''Sqlite3 db interface'''
+    '''Interface for sqlite3 database'''
     def __init__( self, db_file = None, config = cfg.Config() ):
         config.read_config()
-        mkdir( config.config_dir )
+        mkdir( config.assets_dir )
         self.database = sqlite3.connect( db_file or config.db_file )
 
     def __del__( self ):
         self.database.close()
 
     def _create_tables( self ):
-        '''Creates tables if they dont exist'''
+        '''Creates tables if they don't exist'''
         cursor = self.database.cursor()
         cursor.execute(
             'CREATE TABLE IF NOT EXISTS known ' + \
@@ -40,7 +32,7 @@ class SQLdb():
         cursor.execute(
             'CREATE TABLE IF NOT EXISTS local ' + \
             '(id INTEGER PRIMARY KEY,' +\
-            'release_id TEXT,' + \
+            'release_id NUMERIC,' + \
             'path TEXT,' + \
             'search_name TEXT,' + \
             'size NUMERIC,' + \
@@ -51,11 +43,11 @@ class SQLdb():
         self.save()
 
     def import_known( self, provider ):
-        '''Imports known roms from provider'''
+        '''Imports roms given by provider'''
         self._create_tables()
 
         cursor = self.database.cursor()
-        for data in provider.rom_list:
+        for data in provider:
             cursor.execute(
                 'INSERT OR REPLACE INTO known VALUES(?,?,?,?,?,?,?)',
                 data
@@ -63,8 +55,8 @@ class SQLdb():
         cursor.close()
 
     def search_crc( self, crc, table = 'known' ):
-        '''Search known roms by crc value'''
-        id_list  = None
+        '''Search roms by crc, returns list'''
+        id_list  = []
         cursor   = self.database.cursor()
         returned = cursor.execute(
             'SELECT id FROM %s WHERE crc=?' % table,
@@ -77,7 +69,7 @@ class SQLdb():
         return id_list
 
     def search_name( self, name, region = None, table = 'known' ):
-        '''Search known roms by name'''
+        '''Search roms by name [and regioncode], returns list'''
         result = []
 
         returned    = None
@@ -104,7 +96,7 @@ class SQLdb():
         return result
 
     def search_local( self, retval, column, search_val ):
-        '''Search local table for roms of specific size'''
+        '''Search local table'''
         result  = []
         cursor  = self.database.cursor()
         id_list = cursor.execute(
@@ -116,20 +108,20 @@ class SQLdb():
         return result
 
     def remove_local( self, path ):
-        '''Remove file from local'''
+        '''Remove rom from local table by given path'''
         cursor = self.database.cursor()
         cursor.execute( 'DELETE from local where path LIKE ?', (
             '%s%%' % path, ) )
         cursor.close()
 
-    def file_info( self, relid ):
-        '''File info from local table'''
+    def file_info( self, lid ):
+        '''Returns file information from local table by given local id'''
         cursor = self.database.cursor()
         result = ( None, None, None, None )
         returned = cursor.execute(
             'SELECT release_id, path, size, crc ' + \
             'FROM local WHERE id=?',
-            ( relid, )
+            ( lid, )
         ).fetchone()
         if returned:
             result = returned
@@ -138,7 +130,7 @@ class SQLdb():
         return result
 
     def rom_info( self, relid ):
-        '''Rom info from known table'''
+        '''Returns rom information from known table by given release id'''
         cursor = self.database.cursor()
         result = ( None, None, None, None, None, None )
         returned = cursor.execute(
@@ -154,7 +146,7 @@ class SQLdb():
         return result
 
     def add_local( self, local_info ):
-        '''Add local rom to db'''
+        '''Adds rom to local table'''
         cursor = self.database.cursor()
         cursor.execute(
             'INSERT OR REPLACE INTO local ' + \
@@ -164,7 +156,7 @@ class SQLdb():
         )
 
     def find_dupes( self ):
-        '''Search for duplicate roms'''
+        '''Searches for duplicate roms'''
         result = []
         cursor = self.database.cursor()
         dupes = cursor.execute(
@@ -177,7 +169,7 @@ class SQLdb():
         return result
 
     def path_list( self ):
-        '''Returns the list of all paths in local'''
+        '''Returns the list of all paths in local table'''
         result = []
         cursor = self.database.cursor()
         paths = cursor.execute( 'SELECT path FROM local').fetchall()
@@ -187,7 +179,7 @@ class SQLdb():
         return result
 
     def already_in_local( self, path, include_unindentified = 0 ):
-        '''Check if path is already present in local'''
+        '''Checks if path is already present in local table'''
         result = False
         cursor = self.database.cursor()
         ret = cursor.execute(
@@ -202,7 +194,7 @@ class SQLdb():
         return result
 
     def save( self ):
-        '''Commit changes to database'''
+        '''Commits changes to database'''
         self.database.commit()
 
 class AdvansceneXML():
@@ -214,7 +206,7 @@ class AdvansceneXML():
 
     def update( self ):
         '''Download new xml from advanscene'''
-        mkdir( self.config.config_dir )
+        mkdir( self.config.assets_dir )
         updated    = 0
         dat_url    = 'http://advanscene.com/offline/datas/ADVANsCEne_NDS_S.zip'
         zip_path   = '%s/%s' % ( self.config.tmp_dir, dat_url.split('/')[-1] )
@@ -239,35 +231,56 @@ class AdvansceneXML():
         return updated
 
     def parse( self ):
-        '''Parse specified xml'''
+        '''Parses the xml file'''
         try:
             xml = minidom.parse( self.path )
             for node in xml.getElementsByTagName( 'game' ):
-                self.rom_list.append( self.parse_node( node ) )
+                self.rom_list.append( parse_node( node ) )
         except IOError:
-            raise Exception( 'Can not open or parse file %s' % self.path )
+            raise Exception( 'AdvParse',
+                    'Can not open or parse file %s' % self.path )
 
-    def parse_node( self, node ):
-        '''Parse node'''
-        title = node_text( node.getElementsByTagName( 'title' )[0].childNodes )
-        publisher = node_text(
-                node.getElementsByTagName( 'publisher' )[0].childNodes )
-        released_by = node_text(
-                node.getElementsByTagName( 'sourceRom' )[0].childNodes )
-        region = node_text(
-                node.getElementsByTagName( 'location' )[0].childNodes )
-        release_number = int( node_text(
-                node.getElementsByTagName( 'releaseNumber' )[0].childNodes ) )
-        crc = self.get_crc( node )
-        normalized_name = strip_name( title.lower() )
-        return ( release_number, title, crc, publisher, released_by,
-                region, normalized_name )
+    def __contains__( self ):
+        return self.rom_list.__contains__()
 
-    def get_crc( self, node ):
-        '''Returns crc from rom node'''
-        for crc in node.getElementsByTagName( 'romCRC' ):
-            if crc.getAttribute( 'extension' ) != '.nds':
-                continue
-            else:
-                return int( node_text( crc.childNodes ), 16 )
-        return None
+    def __iter__( self ):
+        return self.rom_list.__iter__()
+
+    def __len__( self ):
+        return self.rom_list.__len__()
+
+    def __getitem__( self, item ):
+        return self.rom_list.__getitem__( item )
+
+def parse_node( node ):
+    '''Parse node'''
+    title = node_text( node.getElementsByTagName( 'title' )[0].childNodes )
+    publisher = node_text(
+            node.getElementsByTagName( 'publisher' )[0].childNodes )
+    released_by = node_text(
+            node.getElementsByTagName( 'sourceRom' )[0].childNodes )
+    region = int( node_text(
+            node.getElementsByTagName( 'location' )[0].childNodes ) )
+    release_number = int( node_text(
+            node.getElementsByTagName( 'releaseNumber' )[0].childNodes ) )
+    crc = node_crc( node )
+    normalized_name = strip_name( title.lower() )
+    return ( release_number, title, crc, publisher, released_by,
+            region, normalized_name )
+
+def node_text( node_list ):
+    '''Extract text from node'''
+    text = []
+    for node in node_list:
+        if node.nodeType == node.TEXT_NODE:
+            text.append( node.data )
+    return ''.join( text )
+
+def node_crc( node ):
+    '''Returns crc from rom node'''
+    for crc in node.getElementsByTagName( 'romCRC' ):
+        if crc.getAttribute( 'extension' ) != '.nds':
+            continue
+        else:
+            return int( node_text( crc.childNodes ), 16 )
+    return None

@@ -1,12 +1,11 @@
-'''Rom info'''
+'''Provides classes related to roms'''
 import os, re, zipfile, subprocess, shutil
 import struct, binascii, time
 import cfg
-# TODO: should be methods of ui obj
 import ui
 
 class RomInfo:
-    '''Rom info'''
+    '''Rom information from database'''
     def __init__( self, release_id, database, config ):
         self.relid           = release_id
         self.database        = database
@@ -33,8 +32,8 @@ class RomInfo:
                 self.config.region_name( self.region ), self.released_by )
 
 class FileInfo:
-    '''File info'''
-    def __init__( self, path, database, config, relid = None ):
+    '''Local file information'''
+    def __init__( self, path, database, config, lid = None ):
         self.database  = database
         self.config    = config
         self.nds       = None
@@ -44,8 +43,8 @@ class FileInfo:
 
         if path:
             self.path = path
-        elif relid != None:
-            ( release_id, path, size, crc ) = self.database.file_info( relid )
+        elif lid != None:
+            ( release_id, path, size, crc ) = self.database.file_info( lid )
             self.path = path
             self.db_info = {
                     'relid' : release_id,
@@ -264,7 +263,7 @@ class Rom:
         self.file_info = file_info
 
         if not self.file_info:
-            self.file_info = FileInfo( path, database, config )
+            self.file_info = FileInfo( os.path.abspath( path ), database, config )
 
     def is_valid( self ):
         '''If rom is valid'''
@@ -328,7 +327,8 @@ class Rom:
                     savefile ) ) and re.match( r"\d+_\d+_\d+.sav", savefile,
                         flags = re.IGNORECASE ) ):
                     continue
-                ( s_relid, s_lid, s_mtime ) = savefile[0:-4].split( '_' )
+                ( s_relid, s_lid, s_mtime ) = map( int,  savefile[0:-4].split(
+                    '_' ) )
                 if s_relid == relid or s_lid == localid:
                     save_list.append( SaveFile( s_relid, s_lid, s_mtime,
                         remote_name, self.config ) )
@@ -634,11 +634,11 @@ def search( path, config ):
         print "Can't scan path %s: %s" % ( path, exc )
     return result
 
-def import_path( path, opts, config, database ):
+def import_path( path, opts, database, config ):
     '''Import roms from path'''
     for rom_path in search( path, config ):
         rom = Rom( rom_path, database, config )
-        if ( opts.full_rescan or not rom.is_in_db() ) and rom.is_valid():
+        if ( ( opts and opts.full_rescan ) or not rom.is_in_db() ) and rom.is_valid():
             rom.add_to_db()
 
 def get_save( path, save_ext = 'sav' ):

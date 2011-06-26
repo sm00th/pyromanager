@@ -76,7 +76,7 @@ class Cli( cmdln.Cmdln ):
         ${cmd_option_list}
         """
 
-        rom.import_path( path, opts, self.config, self.database )
+        rom.import_path( path, opts, self.database, self.config )
 
     @cmdln.alias( "l", "ls" )
     @cmdln.option( "-k", "--known", action = "store_true",
@@ -127,7 +127,8 @@ class Cli( cmdln.Cmdln ):
                 for savefile in save_list:
                     print " %d. %s" % ( index, savefile )
                     index += 1
-                answer = list_question( "Which one should be uploaded?", range( index ) + [None] )
+                answer = list_question( "Which one should be uploaded?",
+                        range( index ) + [None] )
                 if answer != None:
                     save_list[answer].upload( path )
 

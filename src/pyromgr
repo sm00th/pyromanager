@@ -1,6 +1,6 @@
 #!/usr/bin/python2
 import sys
-from pyNDSrom import ui
+from pyromanager import ui
 
 if __name__ == '__main__':
     __cli__ = ui.Cli()

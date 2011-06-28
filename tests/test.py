@@ -1,12 +1,12 @@
 import unittest
 import os
-import pyNDSrom.cfg
-import pyNDSrom.db
-import pyNDSrom.rom
+import pyromanager.cfg
+import pyromanager.db
+import pyromanager.rom
 
 class cfg_test( unittest.TestCase ):
     def test_defaults( self ):
-        config = pyNDSrom.cfg.Config()
+        config = pyromanager.cfg.Config()
         self.assertEqual( config.rc_file, os.path.expanduser(
             '~/.pyROManager.rc' ) )
         self.assertEqual( config.db_file, os.path.expanduser(
@@ -24,12 +24,12 @@ class cfg_test( unittest.TestCase ):
         self.assertTrue( 'nds' in config.extensions )
 
     def test_bin( self ):
-        self.assertTrue( pyNDSrom.cfg.is_bin_available( 'ls' ) )
-        self.assertFalse( pyNDSrom.cfg.is_bin_available(
+        self.assertTrue( pyromanager.cfg.is_bin_available( 'ls' ) )
+        self.assertFalse( pyromanager.cfg.is_bin_available(
             'there_is_no_way_this_is_in_your_path' ) )
 
     def test_regions( self ):
-        config = pyNDSrom.cfg.Config()
+        config = pyromanager.cfg.Config()
         self.assertEqual( config.region_name( 0 ), 'EUR' )
         self.assertEqual( config.region_name( 0, 0 ), 'Europe' )
         self.assertEqual( config.region_name( 0, 1 ), 'EUR' )
@@ -43,7 +43,7 @@ class cfg_test( unittest.TestCase ):
         self.assertEqual( config.region_code( 'Zimbabwe' ), None )
 
     def test_rc( self ):
-        config = pyNDSrom.cfg.Config( 'tests/test.rc' )
+        config = pyromanager.cfg.Config( 'tests/test.rc' )
         config.read_config()
         self.assertEqual( config.rc_file, 'tests/test.rc' )
         self.assertEqual( config.db_file, os.path.expanduser(
@@ -59,17 +59,17 @@ class cfg_test( unittest.TestCase ):
 
 class db_test( unittest.TestCase ):
     def setUp( self ):
-        self.config = pyNDSrom.cfg.Config( 'tests/test.rc' )
+        self.config = pyromanager.cfg.Config( 'tests/test.rc' )
         self.config._paths['assets_dir'] = 'tests'
         self.config.read_config()
-        self.db = pyNDSrom.db.SQLdb( self.config.db_file, self.config )
+        self.db = pyromanager.db.SQLdb( self.config.db_file, self.config )
 
     def tearDown( self ):
         del( self.db )
         os.unlink( self.config.db_file )
 
     def test_db( self ):
-        xmldb = pyNDSrom.db.AdvansceneXML( 'tests/nds.xml', self.config )
+        xmldb = pyromanager.db.AdvansceneXML( 'tests/nds.xml', self.config )
         xmldb.parse()
         self.assertEqual( len( xmldb )    , 7 )
         self.assertTupleEqual( xmldb[0], (4710, u'Coropata', 3076538459L,
@@ -118,12 +118,12 @@ class db_test( unittest.TestCase ):
 
 class rom_test( unittest.TestCase ):
     def setUp( self ):
-        self.config = pyNDSrom.cfg.Config( 'tests/test.rc' )
+        self.config = pyromanager.cfg.Config( 'tests/test.rc' )
         self.config._paths['assets_dir'] = 'tests'
         self.config.read_config()
-        self.db = pyNDSrom.db.SQLdb( self.config.db_file, self.config )
+        self.db = pyromanager.db.SQLdb( self.config.db_file, self.config )
 
-        xmldb = pyNDSrom.db.AdvansceneXML( 'tests/nds.xml', self.config )
+        xmldb = pyromanager.db.AdvansceneXML( 'tests/nds.xml', self.config )
         xmldb.parse()
         self.db.import_known( xmldb )
 
@@ -132,12 +132,12 @@ class rom_test( unittest.TestCase ):
         os.unlink( self.config.db_file )
 
     def test_RomInfo( self ):
-        rominfo = pyNDSrom.rom.RomInfo( 4710, self.db, self.config )
+        rominfo = pyromanager.rom.RomInfo( 4710, self.db, self.config )
         self.assertEqual( rominfo.filename, '4710 - Coropata (JPN).nds' )
         self.assertEqual( rominfo.__str__(), '4710 - Coropata (JPN) [BAHAMUT]' )
 
     def test_FileInfo_file( self ):
-        finfo = pyNDSrom.rom.FileInfo( 'tests/TinyFB.nds', self.db, self.config )
+        finfo = pyromanager.rom.FileInfo( 'tests/TinyFB.nds', self.db, self.config )
         self.assertFalse( finfo.is_initialized() )
         finfo.init()
         self.assertTrue( finfo.is_initialized() )
@@ -149,16 +149,16 @@ class rom_test( unittest.TestCase ):
         self.assertEqual( finfo.crc, 516824321L )
 
         rinf = finfo.get_rom_info()
-        self.assertIsInstance( rinf, pyNDSrom.rom.RomInfo )
+        self.assertIsInstance( rinf, pyromanager.rom.RomInfo )
 
         self.assertEqual( finfo.__str__(), "tinyfb (tests/TinyFB.nds)" )
 
     def test_FileInfo_invalid( self ):
-        finfo = pyNDSrom.rom.FileInfo( 'tests/fake.nds', self.db, self.config )
+        finfo = pyromanager.rom.FileInfo( 'tests/fake.nds', self.db, self.config )
         self.assertFalse( finfo.is_valid() )
 
     def test_FileInfo_archive( self ):
-        finfo = pyNDSrom.rom.FileInfo( 'tests/TinyFB.zip:TinyFB.nds', self.db, self.config )
+        finfo = pyromanager.rom.FileInfo( 'tests/TinyFB.zip:TinyFB.nds', self.db, self.config )
         self.assertFalse( finfo.is_initialized() )
         finfo.init()
         self.assertTrue( finfo.is_initialized() )
@@ -169,17 +169,17 @@ class rom_test( unittest.TestCase ):
     def test_FileInfo_lid( self ):
         self.db.add_local( ( 4999, '/some/path/to/file.nds', 'something',
             123187123, 9812312 ) )
-        finfo = pyNDSrom.rom.FileInfo( None, self.db, self.config, 1 )
+        finfo = pyromanager.rom.FileInfo( None, self.db, self.config, 1 )
         self.assertTrue( finfo.is_initialized() )
         self.assertEqual( finfo.normalized_name, 'file' )
         self.assertEqual( finfo.size, 123187123 )
         self.assertEqual( finfo.size_mb, '117.48M' )
         self.assertEqual( finfo.crc, 9812312 )
         rinf = finfo.get_rom_info()
-        self.assertIsInstance( rinf, pyNDSrom.rom.RomInfo )
+        self.assertIsInstance( rinf, pyromanager.rom.RomInfo )
 
     def test_Rom( self ):
-        romobj = pyNDSrom.rom.Rom( 'tests/TinyFB.nds', self.db, self.config )
+        romobj = pyromanager.rom.Rom( 'tests/TinyFB.nds', self.db, self.config )
         self.assertTrue( romobj.is_valid() )
         self.assertTrue( romobj.is_initialized() )
         self.assertFalse( romobj.is_in_db() )
@@ -188,13 +188,13 @@ class rom_test( unittest.TestCase ):
         self.assertTrue( 'tests/TinyFB.nds' in romobj.path )
         self.assertEqual( romobj.normalized_name, 'tinyfb testrom' )
         save = romobj.get_saves()[0]
-        self.assertIsInstance( save, pyNDSrom.rom.SaveFile )
+        self.assertIsInstance( save, pyromanager.rom.SaveFile )
         self.assertTrue( save.stored() )
         self.assertEqual( romobj.__str__(), '999999 - TinyFB - TestRom ' + \
                 '(USA) [Independent] 0.00M' )
 
     def test_Nds( self ):
-        testFile = pyNDSrom.rom.Nds( 'tests/TinyFB.nds' )
+        testFile = pyromanager.rom.Nds( 'tests/TinyFB.nds' )
         testFile.parse()
 
         self.assertEqual( testFile.rom['title'] , 'NDS.TinyFB' )
@@ -219,15 +219,15 @@ class rom_test( unittest.TestCase ):
                 ( 3776, "broken sword shadow of templars directors cut", 1 ),
         }
         for( fileName, expectedResult ) in testNames.iteritems():
-            self.assertTupleEqual( pyNDSrom.rom.parse_filename( fileName ), expectedResult )
+            self.assertTupleEqual( pyromanager.rom.parse_filename( fileName ), expectedResult )
 
     def test_extension( self ):
-        self.assertEqual( pyNDSrom.rom.extension( 'path/to/somefile.wTf' ),
+        self.assertEqual( pyromanager.rom.extension( 'path/to/somefile.wTf' ),
                 'wtf' )
 
     def test_search( self ):
-        config = pyNDSrom.cfg.Config()
-        self.assertEqual( len( pyNDSrom.rom.search( '', config ) ), 3 )
+        config = pyromanager.cfg.Config()
+        self.assertEqual( len( pyromanager.rom.search( '', config ) ), 3 )
 
 if __name__ == '__main__':
     unittest.main()

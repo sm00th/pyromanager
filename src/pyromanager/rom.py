@@ -1,7 +1,6 @@
 '''Provides classes related to roms'''
 import os, re, zipfile, subprocess, shutil
 import struct, binascii, time
-import cfg
 import ui
 
 class RomInfo:
@@ -69,7 +68,7 @@ class FileInfo:
 
     def _parse_name( self ):
         '''Parse filename'''
-        ( relid, name, region ) = parse_filename( self.path )
+        ( relid, name, region ) = parse_filename( self.path, self.config )
         self.name_info = {
             'release_id'      : relid,
             'normalized_name' : name,
@@ -543,10 +542,8 @@ def strip_name( name ):
 
     return name
 
-def parse_filename( filename ):
+def parse_filename( filename, config ):
     '''Parse rom name'''
-    config = cfg.Config()
-    config.read_config()
     release_number = None
 
     filename = filename.lower()
@@ -652,10 +649,10 @@ def get_save( path, save_ext = 'sav' ):
             if( extension( filename ) == save_ext ):
                 return '%s/%s' % ( save_path, filename )
 
-def identify( path, database ):
+def identify( path, database, config ):
     '''Get local id by path'''
     local_id = None
-    relid = parse_filename( path )[0]
+    relid = parse_filename( path, config )[0]
     if relid:
         id_list = database.search_local( 'id', 'release_id', relid )
         if id_list:

@@ -22,7 +22,7 @@ class Config:
     '''Contais all the settings for pyromanager'''
     def __init__( self, rc_file = DEFAULT_RC ):
         self.rc_file = os.path.expanduser( rc_file )
-        self._paths   = {
+        self._paths  = {
                 'assets_dir'  : os.path.expanduser( "~/.pyromgr" ),
                 'saves_dir' : 'saves',
                 'db_file'   : 'pyromgr.db',

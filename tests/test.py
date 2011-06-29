@@ -218,8 +218,10 @@ class rom_test( unittest.TestCase ):
             "3776 - Broken Sword - Shadow of the Templars - The Director's Cut (USA) (En,Fr,De,Es,It).nds" : 
                 ( 3776, "broken sword shadow of templars directors cut", 1 ),
         }
+        config = pyromanager.cfg.Config( 'tests/test.rc' )
         for( fileName, expectedResult ) in testNames.iteritems():
-            self.assertTupleEqual( pyromanager.rom.parse_filename( fileName ), expectedResult )
+            self.assertTupleEqual( pyromanager.rom.parse_filename( fileName,
+                config ), expectedResult )
 
     def test_extension( self ):
         self.assertEqual( pyromanager.rom.extension( 'path/to/somefile.wTf' ),

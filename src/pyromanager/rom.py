@@ -208,7 +208,7 @@ class FileInfo:
         else:
             try:
                 relid = self.database.search_crc( self.crc, 'known' )[0]
-            except TypeError:
+            except( TypeError, IndexError ):
                 pass
             if not relid:
                 relid_list = self.database.search_name(

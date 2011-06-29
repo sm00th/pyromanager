@@ -2,6 +2,10 @@
 import cmdln, os
 import db, cfg, rom
 
+def colorize( msg, colorid = 0 ):
+    '''Colorize string'''
+    return "\x1b[%im%s\x1b[39;49;00m" % ( colorid, msg )
+
 def list_question( msg, choice_list, default=None ):
     '''Qustion with multiple choices'''
     print "%s [%s](Default: %s)" % ( 

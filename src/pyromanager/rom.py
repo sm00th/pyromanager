@@ -101,14 +101,14 @@ class FileInfo:
         result = None
         if type( relid ) == int:
             rom_obj = RomInfo( relid, self.database, self.config )
-            print "File '%s' was identified as %s" % (
-                    os.path.basename( self.path ),
+            print "%s\nIdentified as %s" % (
+                    ui.colorize( os.path.basename( self.path ), 31 ),
                     rom_obj
             )
             result = ui.question_yn( "Is this correct?" )
         elif type( relid ) == list:
-            print "File '%s' can be one of the following:" % (
-                    os.path.basename( self.path ) )
+            print "%s\nCan be one of the following:" % (
+                    ui.colorize( os.path.basename( self.path ) ) )
             index = 0
             for release_id in relid:
                 rom_obj = RomInfo( release_id, self.database, self.config )
@@ -123,7 +123,8 @@ class FileInfo:
     def _ask_name( self ):
         '''Ask user for rom name'''
         search_name = None
-        print "Wasn't able to automatically identify %s" % ( self.path )
+        print "Wasn't able to automatically identify\n%s" % ( ui.colorize(
+            self.path ) )
         if ui.question_yn( "Want to manually search by name?" ):
             print "Enter name: ",
             search_name = raw_input().lower()

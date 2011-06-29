@@ -1,9 +1,9 @@
-'''Provides configuration for pyROManager'''
+'''Provides configuration for pyromanager'''
 import os
 import subprocess
 import ConfigParser
 
-DEFAULT_RC = os.path.expanduser( "~/.pyROManager.rc" )
+DEFAULT_RC = os.path.expanduser( "~/.pyromgr.rc" )
 
 def is_bin_available( binfile ):
     '''Determine if binary is somewhere in $PATH'''
@@ -19,13 +19,13 @@ def is_bin_available( binfile ):
     return exists
 
 class Config:
-    '''Contais all the settings for pyROManager'''
+    '''Contais all the settings for pyromanager'''
     def __init__( self, rc_file = DEFAULT_RC ):
         self.rc_file = os.path.expanduser( rc_file )
         self._paths   = {
-                'assets_dir'  : os.path.expanduser( "~/.pyROManager" ),
+                'assets_dir'  : os.path.expanduser( "~/.pyromgr" ),
                 'saves_dir' : 'saves',
-                'db_file'   : 'pyro.db',
+                'db_file'   : 'pyromgr.db',
                 'xml_file'  : 'advanscene.xml',
                 'tmp_dir'   : '/tmp',
                 'flashcart' : '/mnt/ds',

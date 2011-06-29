@@ -1,4 +1,4 @@
-'''User interface routines for pyROManager'''
+'''User interface routines for pyromanager'''
 import cmdln, os
 import db, cfg, rom
 

@@ -8,17 +8,17 @@ class cfg_test( unittest.TestCase ):
     def test_defaults( self ):
         config = pyromanager.cfg.Config()
         self.assertEqual( config.rc_file, os.path.expanduser(
-            '~/.pyROManager.rc' ) )
+            '~/.pyromgr.rc' ) )
         self.assertEqual( config.db_file, os.path.expanduser(
-            '~/.pyROManager/pyro.db' ) )
+            '~/.pyromgr/pyromgr.db' ) )
         self.assertEqual( config.xml_file, os.path.expanduser(
-            '~/.pyROManager/advanscene.xml' ) )
+            '~/.pyromgr/advanscene.xml' ) )
         self.assertEqual( config.flashcart, os.path.expanduser(
             '/mnt/ds' ) )
         self.assertEqual( config.tmp_dir, os.path.expanduser(
             '/tmp' ) )
         self.assertEqual( config.saves_dir, os.path.expanduser(
-            '~/.pyROManager/saves' ) )
+            '~/.pyromgr/saves' ) )
         self.assertEqual( config.save_ext, os.path.expanduser(
             'sav' ) )
         self.assertTrue( 'nds' in config.extensions )
@@ -47,13 +47,13 @@ class cfg_test( unittest.TestCase ):
         config.read_config()
         self.assertEqual( config.rc_file, 'tests/test.rc' )
         self.assertEqual( config.db_file, os.path.expanduser(
-            '~/.pyROManager/sql.db' ) )
+            '~/.pyromgr/sql.db' ) )
         self.assertEqual( config.xml_file, os.path.expanduser(
-            '~/.pyROManager/adv.xml' ) )
+            '~/.pyromgr/adv.xml' ) )
         self.assertEqual( config.flashcart, '/home/someuser/flash' )
         self.assertEqual( config.tmp_dir, '/tmp' )
         self.assertEqual( config.saves_dir, os.path.expanduser(
-            '~/.pyROManager/saves' ) )
+            '~/.pyromgr/saves' ) )
         self.assertEqual( config.save_ext, os.path.expanduser(
             '0' ) )
 

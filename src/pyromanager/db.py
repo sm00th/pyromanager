@@ -9,7 +9,6 @@ from xml.dom import minidom
 class SQLdb():
     '''Interface for sqlite3 database'''
     def __init__( self, db_file = None, config = cfg.Config() ):
-        config.read_config()
         mkdir( config.assets_dir )
         self.database = sqlite3.connect( db_file or config.db_file )
 
@@ -240,8 +239,8 @@ class AdvansceneXML():
             raise Exception( 'AdvParse',
                     'Can not open or parse file %s' % self.path )
 
-    def __contains__( self ):
-        return self.rom_list.__contains__()
+    def __contains__( self, item ):
+        return self.rom_list.__contains__( item )
 
     def __iter__( self ):
         return self.rom_list.__iter__()

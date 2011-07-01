@@ -1,6 +1,10 @@
-'''User interface routines for pyROManager'''
+'''User interface routines for pyromanager'''
 import cmdln, os
 import db, cfg, rom
+
+def colorize( msg, colorid = 0 ):
+    '''Colorize string'''
+    return "\x1b[%im%s\x1b[39;49;00m" % ( colorid, msg )
 
 def list_question( msg, choice_list, default=None ):
     '''Qustion with multiple choices'''
@@ -26,8 +30,8 @@ def list_question( msg, choice_list, default=None ):
 def question_yn( msg, default="y" ):
     '''Yes/No question'''
     choices = {
-        'y' : [ 'y', 1 ],
-        'n' : [ 'n', 0 ],
+        'y' : [ 'y', True ],
+        'n' : [ 'n', False ],
     }
     choices[default][0] = choices[default][0].upper()
     choice_list = []
@@ -76,7 +80,7 @@ class Cli( cmdln.Cmdln ):
         ${cmd_option_list}
         """
 
-        rom.import_path( path, opts, self.config, self.database )
+        rom.import_path( path, opts, self.database, self.config )
 
     @cmdln.alias( "l", "ls" )
     @cmdln.option( "-k", "--known", action = "store_true",
@@ -120,7 +124,19 @@ class Cli( cmdln.Cmdln ):
         answer = list_question( "Which one?", range( index ) + [None] )
         if answer != None:
             rom_list[answer].upload( path )
+            save_list = rom_list[answer].get_saves()
+            if save_list:
+                print "Savefiles found for this rom:"
+                index = 0
+                for savefile in save_list:
+                    print " %d. %s" % ( index, savefile )
+                    index += 1
+                answer = list_question( "Which one should be uploaded?",
+                        range( index ) + [None] )
+                if answer != None:
+                    save_list[answer].upload( path )
 
+    @cmdln.alias( "rd" )
     def do_rmdupes( self, subcmd, opts ):
         """${cmd_name}: remove duplicate roms from disk
 
@@ -148,6 +164,7 @@ class Cli( cmdln.Cmdln ):
                     self.database.save()
             print
 
+    @cmdln.alias( "udb" )
     @cmdln.option( "-f", "--force", action = "store_true",
             help = "Force update even if xml is up to date" )
     def do_updatedb( self, subcmd, opts ):
@@ -166,7 +183,8 @@ class Cli( cmdln.Cmdln ):
         else:
             print "Already up to date"
 
-    def do_clean( self, subcmd, opts ):
+    @cmdln.alias( "c", "cdb" )
+    def do_cleandb( self, subcmd, opts ):
         """${cmd_name}: Find and remove from db files that are no longer
         present
 
@@ -179,3 +197,34 @@ class Cli( cmdln.Cmdln ):
             if not os.path.exists( path ):
                 self.database.remove_local( path )
         self.database.save()
+
+    @cmdln.alias( "bs" )
+    def do_backupsaves( self, subcmd, opts, *path ):
+        """${cmd_name}: Savefile manager
+
+        ${cmd_usage}
+        ${cmd_option_list}
+        """
+
+        if path:
+            path = path[0]
+        else:
+            path = self.config.flashcart
+
+        for nds_path in rom.search( path, self.config ):
+            save_path = rom.get_save( nds_path, self.config.save_ext )
+            if save_path:
+                local_id = rom.identify( nds_path, self.database, self.config )
+                if local_id:
+                    relid = None
+                    try:
+                        relid = self.database.search_local( 'release_id',
+                                'id', local_id )[0]
+                    except TypeError:
+                        pass
+                    save_mtime = os.stat( save_path ).st_mtime
+                    save = rom.SaveFile( relid, local_id, save_mtime, None,
+                            self.config )
+                    if not save.stored():
+                        print "Backing up", save_path, save
+                        save.copy_from( save_path )

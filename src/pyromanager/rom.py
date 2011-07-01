@@ -1,10 +1,10 @@
-'''Rom info'''
+'''Provides classes related to roms'''
 import os, re, zipfile, subprocess, shutil
-import struct, binascii
-import cfg, ui
+import struct, binascii, time
+import ui
 
 class RomInfo:
-    '''Rom info'''
+    '''Rom information from database'''
     def __init__( self, release_id, database, config ):
         self.relid           = release_id
         self.database        = database
@@ -31,8 +31,8 @@ class RomInfo:
                 self.config.region_name( self.region ), self.released_by )
 
 class FileInfo:
-    '''File info'''
-    def __init__( self, path, database, config, relid = None ):
+    '''Local file information'''
+    def __init__( self, path, database, config, lid = None ):
         self.database  = database
         self.config    = config
         self.nds       = None
@@ -42,8 +42,8 @@ class FileInfo:
 
         if path:
             self.path = path
-        elif relid != None:
-            ( release_id, path, size, crc ) = self.database.file_info( relid )
+        elif lid != None:
+            ( release_id, path, size, crc ) = self.database.file_info( lid )
             self.path = path
             self.db_info = {
                     'relid' : release_id,
@@ -55,7 +55,7 @@ class FileInfo:
     def init( self ):
         '''Get nds object and prepare name_info'''
         nds = None
-        if self._is_archived():
+        if self.is_archived():
             ( archive_path, nds_name ) = self._split_path()
             archive = archive_obj( archive_path, self.config )
             nds = archive.get_nds( nds_name )
@@ -68,7 +68,7 @@ class FileInfo:
 
     def _parse_name( self ):
         '''Parse filename'''
-        ( relid, name, region ) = parse_filename( self.path )
+        ( relid, name, region ) = parse_filename( self.path, self.config )
         self.name_info = {
             'release_id'      : relid,
             'normalized_name' : name,
@@ -85,33 +85,29 @@ class FileInfo:
             pass
         return ( archive_path, file_path )
 
-    def _is_archived( self ):
+    def is_archived( self ):
         '''Check if nds file is in archive'''
-        result = 0
         if re.search( ':', self.path ):
-            result = 1
-        return result
+            return True
 
     def is_initialized( self ):
         '''Check if object is properly initialized'''
-        result = 0
         if self.nds or self.db_info:
-            result = 1
-        return result
+            return True
 
     def _confirm_file( self, relid = None ):
         '''Confirm that file was detected right'''
-        result = 0
+        result = None
         if type( relid ) == int:
             rom_obj = RomInfo( relid, self.database, self.config )
-            print "File '%s' was identified as %s" % (
-                    os.path.basename( self.path ),
+            print "%s\nIdentified as %s" % (
+                    ui.colorize( os.path.basename( self.path ), 31 ),
                     rom_obj
             )
             result = ui.question_yn( "Is this correct?" )
         elif type( relid ) == list:
-            print "File '%s' can be one of the following:" % (
-                    os.path.basename( self.path ) )
+            print "%s\nCan be one of the following:" % (
+                    ui.colorize( os.path.basename( self.path ) ) )
             index = 0
             for release_id in relid:
                 rom_obj = RomInfo( release_id, self.database, self.config )
@@ -126,7 +122,8 @@ class FileInfo:
     def _ask_name( self ):
         '''Ask user for rom name'''
         search_name = None
-        print "Wasn't able to automatically identify %s" % ( self.path )
+        print "Wasn't able to automatically identify\n%s" % ( ui.colorize(
+            self.path ) )
         if ui.question_yn( "Want to manually search by name?" ):
             print "Enter name: ",
             search_name = raw_input().lower()
@@ -177,6 +174,18 @@ class FileInfo:
         return result
 
     @property
+    def size_mb( self ):
+        '''File size in megabytes'''
+        if not self.is_initialized():
+            self.init()
+        result = 'Unknown'
+        if self.nds:
+            result = "%.2fM" % ( self.nds.size / 1048576.0 )
+        elif self.db_info:
+            result = "%.2fM" % ( self.db_info['size'] / 1048576.0 )
+        return result
+
+    @property
     def crc( self ):
         '''File crc'''
         if not self.is_initialized():
@@ -186,14 +195,6 @@ class FileInfo:
             result = self.nds.crc
         elif self.db_info:
             result = self.db_info['crc']
-        return result
-
-    @property
-    def size_mb( self ):
-        '''File size in megabytes'''
-        result = 'Unknown'
-        if self.nds.rom['size']:
-            result = "%.2fM" % ( self.nds.size / 1048576.0 )
         return result
 
     def get_rom_info( self ):
@@ -207,7 +208,7 @@ class FileInfo:
         else:
             try:
                 relid = self.database.search_crc( self.crc, 'known' )[0]
-            except TypeError:
+            except( TypeError, IndexError ):
                 pass
             if not relid:
                 relid_list = self.database.search_name(
@@ -233,7 +234,7 @@ class FileInfo:
         if not filename:
             filename = re.sub( r"^.*(/|:)", '', self.path )
 
-        if self._is_archived():
+        if self.is_archived():
             ( archive_path, nds_name ) = self._split_path()
             archive = archive_obj( archive_path, self.config )
             archive.extract( nds_name, path )
@@ -262,7 +263,7 @@ class Rom:
         self.file_info = file_info
 
         if not self.file_info:
-            self.file_info = FileInfo( path, database, config )
+            self.file_info = FileInfo( os.path.abspath( path ), database, config )
 
     def is_valid( self ):
         '''If rom is valid'''
@@ -274,10 +275,8 @@ class Rom:
 
     def is_initialized( self ):
         '''Checks if there is any information in this object'''
-        result = 0
         if self.file_info.is_initialized() or self.rom_info:
-            result = 1
-        return result
+            return True
 
     def add_to_db( self ):
         '''Add current rom file to database'''
@@ -312,10 +311,67 @@ class Rom:
         '''Copy rom to flashcart'''
         self.file_info.upload( path, self.rom_info.filename )
 
+    def get_saves( self ):
+        '''Check if rom has any backed up saves'''
+        save_list = []
+        if self.rom_info:
+            relid   = self.rom_info.relid
+            localid = self.database.search_local( 'id', 'path',
+                    self.file_info.path )[0]
+
+            remote_name = re.sub( 'nds', self.config.save_ext,
+                    self.rom_info.filename, flags = re.IGNORECASE )
+            mkdir( self.config.saves_dir )
+            for savefile in os.listdir( self.config.saves_dir ):
+                if not( os.path.isfile( '%s/%s' % ( self.config.saves_dir,
+                    savefile ) ) and re.match( r"\d+_\d+_\d+.sav", savefile,
+                        flags = re.IGNORECASE ) ):
+                    continue
+                ( s_relid, s_lid, s_mtime ) = map( int,  savefile[0:-4].split(
+                    '_' ) )
+                if s_relid == relid or s_lid == localid:
+                    save_list.append( SaveFile( s_relid, s_lid, s_mtime,
+                        remote_name, self.config ) )
+        return save_list
+
     def __str__( self ):
         if not self.rom_info:
             self.rom_info  = self.file_info.get_rom_info()
-        return '%s' % self.rom_info
+        string = [ '%s' % self.rom_info ]
+        if self.file_info:
+            string.append( self.file_info.size_mb )
+            if self.file_info.is_archived():
+                string.append( '[Archive]' )
+
+        return ' '.join( string )
+
+class SaveFile:
+    '''Rom savefile'''
+    def __init__( self, relid, lid, mtime, filename, config ):
+        self.relid       = int( relid )
+        self.lid         = int( lid )
+        self.mtime       = float( mtime )
+        self.local_name  = '%s/%d_%d_%d.sav' % ( config.saves_dir, self.relid,
+                self.lid, self.mtime )
+        self.remote_name = filename
+
+        mkdir( config.saves_dir )
+
+    def stored( self ):
+        '''Check if file is stored already'''
+        if os.path.exists( self.local_name ):
+            return True
+
+    def copy_from( self, file_path ):
+        '''Copy save from file'''
+        shutil.copy( file_path, self.local_name )
+
+    def upload( self, path ):
+        '''Upload savefile to specified path'''
+        shutil.copy( self.local_name, '%s/%s' % ( path, self.remote_name ) )
+
+    def __str__( self ):
+        return time.strftime( "%x %X", time.localtime( self.mtime ) )
 
 class Nds:
     ''' Reads the contents of .nds files '''
@@ -375,10 +431,8 @@ class Archive:
 
     def is_valid( self ):
         '''Check if archive contains any nds files'''
-        result = 0
         if len( self.file_list ):
-            result = 1
-        return result
+            return True
 
     def extract( self, archive_file, path ):
         '''Extract specified file to path'''
@@ -437,8 +491,6 @@ class Zip7( Archive ):
                     self.file_list.append( filename )
         list_archive.wait()
 
-        return 1
-
     def extract( self, archive_file, path ):
         '''Extract specified file to path'''
         decompress = subprocess.Popen( [ '7z', 'e', '-y', '-o%s' % path,
@@ -459,8 +511,6 @@ class Rar( Archive ):
             if re.search( "\.%s$" % ext, filename, flags = re.IGNORECASE ):
                 self.file_list.append( filename )
         list_archive.wait()
-
-        return 1
 
     def extract( self, archive_file, path ):
         '''Extract specified file to path'''
@@ -492,10 +542,8 @@ def strip_name( name ):
 
     return name
 
-def parse_filename( filename ):
+def parse_filename( filename, config ):
     '''Parse rom name'''
-    config = cfg.Config()
-    config.read_config()
     release_number = None
 
     filename = filename.lower()
@@ -525,6 +573,7 @@ def parse_filename( filename ):
 
     return ( release_number, filename, region )
 
+# FIXME: os.path.splitext
 def extension( file_name ):
     '''Returns the extension of specified file'''
     result = ''
@@ -583,12 +632,44 @@ def search( path, config ):
         print "Can't scan path %s: %s" % ( path, exc )
     return result
 
-def import_path( path, opts, config, database ):
+def import_path( path, opts, database, config ):
     '''Import roms from path'''
     for rom_path in search( path, config ):
         rom = Rom( rom_path, database, config )
-        if ( opts.full_rescan or not rom.is_in_db() ) and rom.is_valid():
+        if ( ( opts and opts.full_rescan ) or not rom.is_in_db() ) and rom.is_valid():
             rom.add_to_db()
+
+def get_save( path, save_ext = 'sav' ):
+    '''Search for savefile of given rom'''
+    ( save_path, nds_name ) = os.path.split( path )
+    nds_name = os.path.splitext( nds_name )[0]
+    for filename in os.listdir( save_path ):
+        if os.path.isfile( '%s/%s' % ( save_path, filename ) ) and ( 
+                nds_name in filename ):
+            if( extension( filename ) == save_ext ):
+                return '%s/%s' % ( save_path, filename )
+
+def identify( path, database, config ):
+    '''Get local id by path'''
+    local_id = None
+    relid = parse_filename( path, config )[0]
+    if relid:
+        id_list = database.search_local( 'id', 'release_id', relid )
+        if id_list:
+            local_id = id_list[0]
+    else:
+        id_list = database.search_local( 'id', 'size', os.path.getsize( path ) )
+        if id_list and len( id_list ) == 1:
+            local_id = id_list[0]
+        else:
+            file_handler = open( path, 'rb' )
+            crc = binascii.crc32( file_handler.read() ) & 0xFFFFFFFF
+            file_handler.close()
+            id_list = database.search_local( 'id', 'crc', crc )
+            if id_list:
+                local_id = id_list[0]
+
+    return local_id
 
 def mkdir( path ):
     '''Create dir if not exists'''

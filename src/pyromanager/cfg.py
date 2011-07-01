@@ -1,28 +1,37 @@
-'''Configuration for pyNDSrom'''
+'''Provides configuration for pyromanager'''
 import os
 import subprocess
 import ConfigParser
 
-def check_bin( binfile ):
+DEFAULT_RC = os.path.expanduser( "~/.pyromgr.rc" )
+
+def is_bin_available( binfile ):
     '''Determine if binary is somewhere in $PATH'''
-    exists = 1
-    chk = subprocess.Popen( [ binfile ], stdout = subprocess.PIPE,
-            stderr = subprocess.PIPE )
-    if chk.wait() == 127:
-        exists = 0
+    exists = True
+    try:
+        chk = subprocess.Popen( [ binfile ], stdout = subprocess.PIPE,
+                stderr = subprocess.PIPE )
+        if chk.wait() == 127:
+            exists = False
+    except OSError:
+        exists = False
 
     return exists
 
 class Config:
-    '''Config class'''
-    def __init__( self, rc_file = "~/.pyROManager.rc" ):
+    '''Contais all the settings for pyromanager'''
+    def __init__( self, rc_file = DEFAULT_RC ):
         self.rc_file = os.path.expanduser( rc_file )
-        self._paths   = {
-                'conf_dir'  : os.path.expanduser( "~/.pyROManager" ),
-                'db_file'   : 'pyro.db',
+        self._paths  = {
+                'assets_dir'  : os.path.expanduser( "~/.pyromgr" ),
+                'saves_dir' : 'saves',
+                'db_file'   : 'pyromgr.db',
                 'xml_file'  : 'advanscene.xml',
                 'tmp_dir'   : '/tmp',
                 'flashcart' : '/mnt/ds',
+        }
+        self._saves = {
+                'extension' : 'sav'
         }
         self._locations = {
             0  : ( 'Europe'      , 'EUR'   , 'E' ),
@@ -39,38 +48,45 @@ class Config:
         self._extensions = None
 
     def write_config( self ):
-        '''Dump current config to file'''
+        '''Save changes to rc-file'''
         parser = ConfigParser.ConfigParser()
+
         parser.add_section( 'paths' )
-        for file_type in [ 'db_file', 'xml_file', 'flashcart' ]:
+        for file_type in [ 'db_file', 'xml_file', 'flashcart', 'tmp_dir' ]:
             parser.set( 'paths', file_type, self._paths[file_type] )
+
+        parser.add_section( 'saves' )
+        for ( save_opt, save_val ) in self._saves.iteritems():
+            parser.set( 'saves', save_opt, save_val )
+
         parser.write( file( self.rc_file, 'w' ) )
 
     def read_config( self ):
-        '''Read and parse rc_file'''
+        '''Read and parse rc-file'''
         parser = ConfigParser.ConfigParser()
         if os.path.isfile( self.rc_file ):
             parser.read( self.rc_file )
-        else:
-            # FIXME: will write new config even if it user-specified
+        elif self.rc_file == DEFAULT_RC:
             self.write_config()
             return
 
-        if parser.has_option( 'paths', 'db_file' ):
-            self._paths['db_file'] = parser.get( 'paths', 'db_file' )
-        if parser.has_option( 'paths', 'xml_file' ):
-            self._paths['xml_file'] = parser.get( 'paths', 'xml_file' )
-        if parser.has_option( 'paths', 'flashcart' ):
-            self._paths['flashcart'] = parser.get( 'paths', 'flashcart' )
+        if parser.has_section( 'paths' ):
+            for file_type in [ 'db_file', 'xml_file', 'flashcart', 'tmp_dir' ]:
+                if parser.has_option( 'paths', file_type ):
+                    self._paths[file_type] = parser.get( 'paths', file_type )
+        if parser.has_section( 'saves' ):
+            for save_opt in self._saves.keys():
+                self._saves[save_opt] = parser.get( 'saves', save_opt )
 
     @property
-    def config_dir( self ):
-        '''Config dir path'''
-        return self._paths['conf_dir']
+    def assets_dir( self ):
+        '''Path to directory containing additional files'''
+        return self._paths['assets_dir']
 
     @property
     def tmp_dir( self ):
-        '''Temporary dir for archives mountpoint'''
+        '''Temporary dir, used to temporary extract archives into it to parse
+        nds files'''
         return self._paths['tmp_dir']
 
     @property
@@ -80,35 +96,45 @@ class Config:
 
     @property
     def db_file( self ):
-        '''Full path to db file'''
-        return '%s/%s' % ( self._paths['conf_dir'], self._paths['db_file'] )
+        '''Full path to sqlite database file'''
+        return '%s/%s' % ( self._paths['assets_dir'], self._paths['db_file'] )
 
     @property
     def xml_file( self ):
         '''Full path to advanscene xml file'''
-        return '%s/%s' % ( self._paths['conf_dir'], self._paths['xml_file'] )
+        return '%s/%s' % ( self._paths['assets_dir'], self._paths['xml_file'] )
+
+    @property
+    def saves_dir( self ):
+        '''Full path to saves directory'''
+        return '%s/%s' % ( self._paths['assets_dir'], self._paths['saves_dir'] )
+
+    @property
+    def save_ext( self ):
+        '''Savefile extension'''
+        return self._saves['extension']
 
     @property
     def extensions( self ):
-        '''List of allowed extensions'''
+        '''List of supported extensions'''
         if not self._extensions:
             self._extensions = [ 'nds', 'zip' ]
-            if check_bin( '7z' ):
+            if is_bin_available( '7z' ):
                 self._extensions.append( '7z' )
-            if check_bin( 'rar' ):
+            if is_bin_available( 'rar' ):
                 self._extensions.append( 'rar' )
 
         return self._extensions
 
     def region_code( self, name ):
-        '''Translates location name to int'''
+        '''Translates region name to it's code (int)'''
         for ( location_id, aliases ) in self._locations.iteritems():
             if name.lower() in [ x.lower() for x in aliases ]:
                 return location_id
         return None
 
     def region_name( self, location_id, return_type=1 ):
-        '''Translates location id to it's name'''
+        '''Translates region code to it's name(str)'''
         result = 'Unknown: %d' % location_id
         if return_type not in range(3):
             return_type = 1

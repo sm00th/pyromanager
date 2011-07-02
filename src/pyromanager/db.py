@@ -240,26 +240,30 @@ class AdvansceneXML():
     def update( self ):
         '''Download new xml from advanscene'''
         mkdir( self.config.assets_dir )
-        updated    = 0
+        updated    = False
         dat_url    = 'http://advanscene.com/offline/datas/ADVANsCEne_NDS_S.zip'
         zip_path   = '%s/%s' % ( self.config.tmp_dir, dat_url.split('/')[-1] )
 
-        url_handler = urllib2.urlopen( dat_url )
-        if not( os.path.exists( self.config.xml_file ) ) or time.gmtime(
-                os.stat( self.config.xml_file ).st_mtime ) < time.strptime(
-                url_handler.info().getheader( 'Last-Modified' ),
-                '%a, %d %b %Y %H:%M:%S %Z' ):
-            updated = 1
-            file_handler = open( zip_path, 'w' )
-            file_handler.write( url_handler.read() )
-            file_handler.close()
-            archive = Zip( zip_path, self.config )
-            archive.scan_files( 'xml' )
-            archive_xml = archive.file_list[0]
-            archive.extract( archive_xml, self.config.tmp_dir )
-            shutil.move( '%s/%s' % ( self.config.tmp_dir, archive_xml ),
-                    self.config.xml_file )
-            os.unlink( zip_path )
+        try:
+            url_handler = urllib2.urlopen( dat_url )
+            if not( os.path.exists( self.config.xml_file ) ) or time.gmtime(
+                    os.stat( self.config.xml_file ).st_mtime ) < time.strptime(
+                    url_handler.info().getheader( 'Last-Modified' ),
+                    '%a, %d %b %Y %H:%M:%S %Z' ):
+                updated = True
+                file_handler = open( zip_path, 'w' )
+                file_handler.write( url_handler.read() )
+                file_handler.close()
+                archive = Zip( zip_path, self.config )
+                archive.scan_files( 'xml' )
+                archive_xml = archive.file_list[0]
+                archive.extract( archive_xml, self.config.tmp_dir )
+                shutil.move( '%s/%s' % ( self.config.tmp_dir, archive_xml ),
+                        self.config.xml_file )
+                os.unlink( zip_path )
+        except urllib2.URLError as exc:
+            print "Unable to download xml: %s" % ( exc )
+            exit( 2 )
 
         return updated
 

@@ -6,10 +6,20 @@ def colorize( msg, colorid = 0 ):
     '''Colorize string'''
     return "\x1b[%im%s\x1b[39;49;00m" % ( colorid, msg )
 
-def list_question( msg, choice_list, default=None ):
+def list_question( pre_msg, choice_list, msg, default = None ):
     '''Qustion with multiple choices'''
-    print "%s [%s](Default: %s)" % ( 
-        msg, '/'.join( [ str(x) for x in choice_list ] ),
+
+    if pre_msg:
+        print "%s" % pre_msg
+    index = 0
+    for choice in choice_list:
+        print " %3d. %s" % ( index, choice )
+        index += 1
+
+    index_list = range( index ) + [ None ]
+
+    print "%s [%s] (Default: %s)" % ( 
+        msg, '/'.join( [ str(x) for x in index_list ] ),
         default
     ),
     reply = raw_input().lower()
@@ -21,9 +31,9 @@ def list_question( msg, choice_list, default=None ):
         except ValueError:
             reply = ''
 
-    if reply not in choice_list:
+    if reply not in index_list:
         print "Unexpected input"
-        return list_question( msg, choice_list, default )
+        return list_question( pre_msg, choice_list, msg, default )
 
     return reply
 
@@ -117,22 +127,13 @@ class Cli( cmdln.Cmdln ):
                         id ) ),
                 self.database.search_name( name, table = 'local' )
         )
-        index = 0
-        for rom_obj in rom_list:
-            print " %3d. %s" % ( index, rom_obj )
-            index += 1
-        answer = list_question( "Which one?", range( index ) + [None] )
+        answer = list_question( "Possible roms:", rom_list, "Which one?" )
         if answer != None:
             rom_list[answer].upload( path )
             save_list = rom_list[answer].get_saves()
             if save_list:
-                print "Savefiles found for this rom:"
-                index = 0
-                for savefile in save_list:
-                    print " %d. %s" % ( index, savefile )
-                    index += 1
-                answer = list_question( "Which one should be uploaded?",
-                        range( index ) + [None] )
+                answer = list_question( "Savefiles found for this rom:",
+                        save_list, "Which one should be uploaded?" )
                 if answer != None:
                     save_list[answer].upload( path )
 
@@ -150,13 +151,10 @@ class Cli( cmdln.Cmdln ):
                             self.config, id ) ),
                     self.database.search_crc( crc, table = 'local' )
             )
-            print "%d duplicates found for %s" % ( entries, rom_list[0] )
-            print "Delete all but one(None - let all be)"
-            index = 0
-            for rom_obj in rom_list:
-                print " %d. %s" % ( index, rom_obj.path )
-                index += 1
-            answer = list_question( "Which one?", range( index ) + [None] )
+
+            pre_msg = "%d duplicates found for %s" % ( entries, rom_list[0] ) +\
+                "Delete all but one(None - let all be)"
+            answer = list_question( pre_msg, rom_list, "Which one?" )
             if answer != None:
                 del rom_list[answer]
                 for rom_obj in rom_list:

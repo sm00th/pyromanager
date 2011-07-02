@@ -106,15 +106,11 @@ class FileInfo:
             )
             result = ui.question_yn( "Is this correct?" )
         elif type( relid ) == list:
-            print "%s\nCan be one of the following:" % (
+            pre_msg = "%s\nCan be one of the following:" % (
                     ui.colorize( os.path.basename( self.path ) ) )
-            index = 0
-            for release_id in relid:
-                rom_obj = RomInfo( release_id, self.database, self.config )
-                print " %d. %s" % ( index, rom_obj )
-                index += 1
-            result = ui.list_question( "Which one?",
-                    range(index) + [None] )
+            rom_list = [ RomInfo( release_id, self.database, self.config ) for
+                release_id in relid ]
+            result = ui.list_question( pre_msg, rom_list, "Which one?" )
         print
 
         return result
@@ -263,7 +259,8 @@ class Rom:
         self.file_info = file_info
 
         if not self.file_info:
-            self.file_info = FileInfo( os.path.abspath( path ), database, config )
+            self.file_info = FileInfo( os.path.abspath( path ), database,
+                    config )
 
     def is_valid( self ):
         '''If rom is valid'''
@@ -636,7 +633,8 @@ def import_path( path, opts, database, config ):
     '''Import roms from path'''
     for rom_path in search( path, config ):
         rom = Rom( rom_path, database, config )
-        if ( ( opts and opts.full_rescan ) or not rom.is_in_db() ) and rom.is_valid():
+        if ( ( opts and opts.full_rescan ) or not rom.is_in_db() ) \
+                and rom.is_valid():
             rom.add_to_db()
 
 def get_save( path, save_ext = 'sav' ):

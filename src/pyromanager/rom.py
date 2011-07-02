@@ -324,8 +324,8 @@ class Rom:
                     savefile ) ) and re.match( r"\d+_\d+_\d+.sav", savefile,
                         flags = re.IGNORECASE ) ):
                     continue
-                ( s_relid, s_lid, s_mtime ) = map( int,  savefile[0:-4].split(
-                    '_' ) )
+                ( s_relid, s_lid, s_mtime ) = ( int( sav ) for sav in \
+                        savefile[0:-4].split( '_' ) )
                 if s_relid == relid or s_lid == localid:
                     save_list.append( SaveFile( s_relid, s_lid, s_mtime,
                         remote_name, self.config ) )

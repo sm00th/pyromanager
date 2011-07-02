@@ -148,9 +148,6 @@ class rom_test( unittest.TestCase ):
         self.assertEqual( finfo.size_mb, '0.00M' )
         self.assertEqual( finfo.crc, 516824321L )
 
-        rinf = finfo.get_rom_info()
-        self.assertIsInstance( rinf, pyromanager.rom.RomInfo )
-
         self.assertEqual( finfo.__str__(), "tinyfb (tests/TinyFB.nds)" )
 
     def test_FileInfo_invalid( self ):
@@ -175,8 +172,6 @@ class rom_test( unittest.TestCase ):
         self.assertEqual( finfo.size, 123187123 )
         self.assertEqual( finfo.size_mb, '117.48M' )
         self.assertEqual( finfo.crc, 9812312 )
-        rinf = finfo.get_rom_info()
-        self.assertIsInstance( rinf, pyromanager.rom.RomInfo )
 
     def test_Rom( self ):
         romobj = pyromanager.rom.Rom( 'tests/TinyFB.nds', self.db, self.config )

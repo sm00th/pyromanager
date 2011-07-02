@@ -95,55 +95,6 @@ class FileInfo:
         if self.nds or self.db_info:
             return True
 
-    def _confirm_file( self, relid = None ):
-        '''Confirm that file was detected right'''
-        result = None
-        if type( relid ) == int:
-            rom_obj = RomInfo( relid, self.database, self.config )
-            print "%s\nIdentified as %s" % (
-                    ui.colorize( os.path.basename( self.path ), 31 ),
-                    rom_obj
-            )
-            result = ui.question_yn( "Is this correct?" )
-        elif type( relid ) == list:
-            pre_msg = "%s\nCan be one of the following:" % (
-                    ui.colorize( os.path.basename( self.path ) ) )
-            rom_list = [ RomInfo( release_id, self.database, self.config ) for
-                release_id in relid ]
-            result = ui.list_question( pre_msg, rom_list, "Which one?" )
-        print
-
-        return result
-
-    def _ask_name( self ):
-        '''Ask user for rom name'''
-        search_name = None
-        print "Wasn't able to automatically identify\n%s" % ( ui.colorize(
-            self.path ) )
-        if ui.question_yn( "Want to manually search by name?" ):
-            print "Enter name: ",
-            search_name = raw_input().lower()
-        return search_name
-
-    def _name_search( self, relid_list ):
-        '''Search database by name'''
-        relid = None
-        if len( relid_list ) == 1 and self._confirm_file(
-                relid_list[0] ):
-            relid = relid_list[0]
-        else:
-            answer = self._confirm_file( relid_list )
-            if answer != None:
-                relid = relid_list[answer]
-            else:
-                search_name = self._ask_name()
-                if search_name:
-                    new_relid_list = self.database.search_name(
-                            search_name, table = 'known' )
-                    if new_relid_list:
-                        relid = self._name_search( new_relid_list )
-        return relid
-
     def is_valid( self ):
         '''Check if nds is a valid rom-file'''
         if not self.is_initialized():
@@ -192,38 +143,6 @@ class FileInfo:
         elif self.db_info:
             result = self.db_info['crc']
         return result
-
-    def get_rom_info( self ):
-        '''Get rom info from database'''
-        if not self.is_initialized():
-            self.init()
-        relid = None
-
-        if self.db_info:
-            relid = self.db_info['relid']
-        else:
-            try:
-                relid = self.database.search_crc( self.crc, 'known' )[0]
-            except( TypeError, IndexError ):
-                pass
-            if not relid:
-                relid_list = self.database.search_name(
-                        self.name_info['normalized_name'],
-                        self.name_info['region'], table = 'known' )
-                if ( self.name_info['release_id'] in relid_list ) or (
-                        self.name_info['release_id'] and self._confirm_file(
-                            self.name_info['release_id'] ) ):
-                    relid = self.name_info['release_id']
-                elif relid_list:
-                    relid = self._name_search( relid_list )
-                else:
-                    search_name = self._ask_name()
-                    if search_name:
-                        relid_list = self.database.search_name(
-                                search_name, table = 'known' )
-                        if relid_list:
-                            relid = self._name_search( relid_list )
-        return RomInfo( relid, self.database, self.config )
 
     def upload( self, path, filename = None ):
         '''Copy rom to flashcart'''
@@ -278,12 +197,91 @@ class Rom:
     def add_to_db( self ):
         '''Add current rom file to database'''
         if not self.rom_info:
-            self.rom_info  = self.file_info.get_rom_info()
+            self.rom_info  = self.get_rom_info()
 
         local_info = ( self.rom_info.relid, self.file_info.path,
                 self.normalized_name, self.file_info.size, self.file_info.crc )
         self.database.add_local( local_info )
         self.database.save()
+
+    def _confirm_file( self, relid = None ):
+        '''Confirm that file was detected right'''
+        result = None
+        if type( relid ) == int:
+            rom_obj = RomInfo( relid, self.database, self.config )
+            print "%s\nIdentified as %s" % (
+                    ui.colorize( os.path.basename( self.file_info.path ), 31 ),
+                    rom_obj
+            )
+            result = ui.question_yn( "Is this correct?" )
+        elif type( relid ) == list:
+            pre_msg = "%s\nCan be one of the following:" % (
+                    ui.colorize( os.path.basename( self.file_info.path ) ) )
+            rom_list = [ RomInfo( release_id, self.database, self.config ) for
+                release_id in relid ]
+            result = ui.list_question( pre_msg, rom_list, "Which one?" )
+        print
+
+        return result
+
+    def _ask_name( self ):
+        '''Ask user for rom name'''
+        search_name = None
+        print "Wasn't able to automatically identify\n%s" % ( ui.colorize(
+            self.file_info.path ) )
+        if ui.question_yn( "Want to manually search by name?" ):
+            print "Enter name: ",
+            search_name = raw_input().lower()
+        return search_name
+
+    def _name_search( self, relid_list ):
+        '''Search database by name'''
+        relid = None
+        if len( relid_list ) == 1 and self._confirm_file(
+                relid_list[0] ):
+            relid = relid_list[0]
+        else:
+            answer = self._confirm_file( relid_list )
+            if answer != None:
+                relid = relid_list[answer]
+            else:
+                search_name = self._ask_name()
+                if search_name:
+                    new_relid_list = self.database.search_name(
+                            search_name, table = 'known' )
+                    if new_relid_list:
+                        relid = self._name_search( new_relid_list )
+        return relid
+
+    def get_rom_info( self ):
+        '''Get rom info from database'''
+        relid = None
+
+        if self.file_info.db_info:
+            relid = self.file_info.db_info['relid']
+        else:
+            try:
+                relid = self.database.search_crc( self.file_info.crc, 'known' )[0]
+            except( TypeError, IndexError ):
+                pass
+            if not relid:
+                relid_list = self.database.search_name(
+                        self.file_info.normalized_name,
+                        self.file_info.name_info['region'], table = 'known' )
+                if ( self.file_info.name_info['release_id'] in relid_list ) or (
+                        self.file_info.name_info['release_id'] and self._confirm_file(
+                            self.file_info.name_info['release_id'] ) ):
+                    relid = self.file_info.name_info['release_id']
+                elif relid_list:
+                    relid = self._name_search( relid_list )
+                else:
+                    search_name = self._ask_name()
+                    if search_name:
+                        relid_list = self.database.search_name(
+                                search_name, table = 'known' )
+                        if relid_list:
+                            relid = self._name_search( relid_list )
+        return RomInfo( relid, self.database, self.config )
 
     @property
     def path( self ):
@@ -333,7 +331,7 @@ class Rom:
 
     def __str__( self ):
         if not self.rom_info:
-            self.rom_info  = self.file_info.get_rom_info()
+            self.rom_info  = self.get_rom_info()
         string = [ '%s' % self.rom_info ]
         if self.file_info:
             string.append( self.file_info.size_mb )

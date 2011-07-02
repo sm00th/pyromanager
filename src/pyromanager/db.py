@@ -59,7 +59,7 @@ class SQLdb():
         id_list  = []
         cursor   = self.database.cursor()
         returned = cursor.execute(
-            'SELECT id FROM %s WHERE crc=?' % table,
+            'SELECT id FROM %s WHERE crc=? ORDER BY id' % table,
             ( crc, )
         ).fetchall()
         if returned:
@@ -79,14 +79,14 @@ class SQLdb():
             returned = cursor.execute(
                 'SELECT id ' + \
                 'FROM %s ' % table + \
-                'WHERE search_name LIKE ? and region=?',
+                'WHERE search_name LIKE ? and region=? ORDER BY id',
                 ( search_name, region ) 
             ).fetchall()
         else:
             returned = cursor.execute(
                 'SELECT id ' + \
                 'FROM %s ' % table + \
-                'WHERE search_name LIKE ?',
+                'WHERE search_name LIKE ? ORDER BY id',
                 ( search_name, ) 
             ).fetchall()
         if returned:
@@ -100,8 +100,8 @@ class SQLdb():
         result  = []
         cursor  = self.database.cursor()
         id_list = cursor.execute(
-            'SELECT %s FROM local WHERE %s=?' % ( retval, column ), (
-                search_val, ) ).fetchall()
+            'SELECT %s FROM local WHERE %s=? ORDER BY id' % ( retval, column ),
+            ( search_val, ) ).fetchall()
         if id_list:
             result = [ local_id[0] for local_id in id_list ]
         cursor.close()

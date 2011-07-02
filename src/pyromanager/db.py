@@ -58,14 +58,17 @@ class SQLdb():
         '''Search roms by crc, returns list'''
         id_list  = []
         cursor   = self.database.cursor()
-        returned = cursor.execute(
-            'SELECT id FROM %s WHERE crc=? ORDER BY id' % table,
-            ( crc, )
-        ).fetchall()
-        if returned:
-            id_list = [ x[0] for x in returned ]
-        cursor.close()
+        try:
+            returned = cursor.execute(
+                'SELECT id FROM %s WHERE crc=? ORDER BY id' % table,
+                ( crc, )
+            ).fetchall()
+            if returned:
+                id_list = [ x[0] for x in returned ]
+        except sqlite3.OperationalError:
+            self._create_tables()
 
+        cursor.close()
         return id_list
 
     def search_name( self, name, region = None, table = 'known' ):
@@ -74,57 +77,71 @@ class SQLdb():
 
         returned    = None
         cursor      = self.database.cursor()
-        search_name = '%' + re.sub( r"\s", '%', name ) + '%'
-        if region != None:
-            returned = cursor.execute(
-                'SELECT id ' + \
-                'FROM %s ' % table + \
-                'WHERE search_name LIKE ? and region=? ORDER BY id',
-                ( search_name, region ) 
-            ).fetchall()
-        else:
-            returned = cursor.execute(
-                'SELECT id ' + \
-                'FROM %s ' % table + \
-                'WHERE search_name LIKE ? ORDER BY id',
-                ( search_name, ) 
-            ).fetchall()
-        if returned:
-            result = [ x[0] for x in returned ]
-        cursor.close()
+        try:
+            search_name = '%' + re.sub( r"\s", '%', name ) + '%'
+            if region != None:
+                returned = cursor.execute(
+                    'SELECT id ' + \
+                    'FROM %s ' % table + \
+                    'WHERE search_name LIKE ? and region=? ORDER BY id',
+                    ( search_name, region ) 
+                ).fetchall()
+            else:
+                returned = cursor.execute(
+                    'SELECT id ' + \
+                    'FROM %s ' % table + \
+                    'WHERE search_name LIKE ? ORDER BY id',
+                    ( search_name, ) 
+                ).fetchall()
+            if returned:
+                result = [ x[0] for x in returned ]
+        except sqlite3.OperationalError:
+            self._create_tables()
 
+        cursor.close()
         return result
 
     def search_local( self, retval, column, search_val ):
         '''Search local table'''
         result  = []
         cursor  = self.database.cursor()
-        id_list = cursor.execute(
-            'SELECT %s FROM local WHERE %s=? ORDER BY id' % ( retval, column ),
-            ( search_val, ) ).fetchall()
-        if id_list:
-            result = [ local_id[0] for local_id in id_list ]
+        try:
+            id_list = cursor.execute(
+                'SELECT %s FROM local WHERE %s=? ORDER BY id' % ( retval, column ),
+                ( search_val, ) ).fetchall()
+            if id_list:
+                result = [ local_id[0] for local_id in id_list ]
+        except sqlite3.OperationalError:
+            self._create_tables()
+
         cursor.close()
         return result
 
     def remove_local( self, path ):
         '''Remove rom from local table by given path'''
         cursor = self.database.cursor()
-        cursor.execute( 'DELETE from local where path LIKE ?', (
-            '%s%%' % path, ) )
+        try:
+            cursor.execute( 'DELETE from local where path LIKE ?', (
+                '%s%%' % path, ) )
+        except sqlite3.OperationalError:
+            self._create_tables()
         cursor.close()
+
 
     def file_info( self, lid ):
         '''Returns file information from local table by given local id'''
         cursor = self.database.cursor()
         result = ( None, None, None, None )
-        returned = cursor.execute(
-            'SELECT release_id, path, size, crc ' + \
-            'FROM local WHERE id=?',
-            ( lid, )
-        ).fetchone()
-        if returned:
-            result = returned
+        try:
+            returned = cursor.execute(
+                'SELECT release_id, path, size, crc ' + \
+                'FROM local WHERE id=?',
+                ( lid, )
+            ).fetchone()
+            if returned:
+                result = returned
+        except sqlite3.OperationalError:
+            self._create_tables()
         cursor.close()
 
         return result
@@ -133,14 +150,17 @@ class SQLdb():
         '''Returns rom information from known table by given release id'''
         cursor = self.database.cursor()
         result = ( None, None, None, None, None, None )
-        returned = cursor.execute(
-            'SELECT id, name, publisher, released_by, region, ' + \
-            'search_name ' + \
-            'FROM known WHERE id=?',
-            ( relid, )
-        ).fetchone()
-        if returned:
-            result = returned
+        try:
+            returned = cursor.execute(
+                'SELECT id, name, publisher, released_by, region, ' + \
+                'search_name ' + \
+                'FROM known WHERE id=?',
+                ( relid, )
+            ).fetchone()
+            if returned:
+                result = returned
+        except sqlite3.OperationalError:
+            self._create_tables()
         cursor.close()
 
         return result
@@ -148,23 +168,30 @@ class SQLdb():
     def add_local( self, local_info ):
         '''Adds rom to local table'''
         cursor = self.database.cursor()
-        cursor.execute(
-            'INSERT OR REPLACE INTO local ' + \
-            '( release_id, path, search_name, size, crc ) ' + \
-            'values ( ?, ?, ?, ?, ? )',
-            local_info
-        )
+        try:
+            cursor.execute(
+                'INSERT OR REPLACE INTO local ' + \
+                '( release_id, path, search_name, size, crc ) ' + \
+                'values ( ?, ?, ?, ?, ? )',
+                local_info
+            )
+        except sqlite3.OperationalError:
+            self._create_tables()
+        cursor.close()
 
     def find_dupes( self ):
         '''Searches for duplicate roms'''
         result = []
         cursor = self.database.cursor()
-        dupes = cursor.execute(
-            'SELECT COUNT(*) as entries, crc FROM ' + \
-            'local GROUP BY crc HAVING entries > 1'
-        ).fetchall()
-        if dupes:
-            result = dupes
+        try:
+            dupes = cursor.execute(
+                'SELECT COUNT(*) as entries, crc FROM ' + \
+                'local GROUP BY crc HAVING entries > 1'
+            ).fetchall()
+            if dupes:
+                result = dupes
+        except sqlite3.OperationalError:
+            self._create_tables()
         cursor.close()
         return result
 
@@ -172,9 +199,12 @@ class SQLdb():
         '''Returns the list of all paths in local table'''
         result = []
         cursor = self.database.cursor()
-        paths = cursor.execute( 'SELECT path FROM local').fetchall()
-        if paths:
-            result = [ path[0] for path in paths ]
+        try:
+            paths = cursor.execute( 'SELECT path FROM local').fetchall()
+            if paths:
+                result = [ path[0] for path in paths ]
+        except sqlite3.OperationalError:
+            self._create_tables()
         cursor.close()
         return result
 
@@ -182,14 +212,17 @@ class SQLdb():
         '''Checks if path is already present in local table'''
         result = False
         cursor = self.database.cursor()
-        ret = cursor.execute(
-            'SELECT id, release_id FROM local ' + \
-            'WHERE path=?',
-            ( path, )
-        ).fetchone()
-        if ret:
-            if ret[1] or include_unindentified:
-                result = True
+        try:
+            ret = cursor.execute(
+                'SELECT id, release_id FROM local ' + \
+                'WHERE path=?',
+                ( path, )
+            ).fetchone()
+            if ret:
+                if ret[1] or include_unindentified:
+                    result = True
+        except sqlite3.OperationalError:
+            self._create_tables()
         cursor.close()
         return result
 

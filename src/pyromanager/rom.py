@@ -216,7 +216,7 @@ class Rom:
             result = ui.question_yn( "Is this correct?" )
         elif type( relid ) == list:
             pre_msg = "%s\nCan be one of the following:" % (
-                    ui.colorize( os.path.basename( self.file_info.path ) ) )
+                    ui.colorize( os.path.basename( self.file_info.path ), 31 ) )
             rom_list = [ RomInfo( release_id, self.database, self.config ) for
                 release_id in relid ]
             result = ui.list_question( pre_msg, rom_list, "Which one?" )
@@ -228,7 +228,7 @@ class Rom:
         '''Ask user for rom name'''
         search_name = None
         print "Wasn't able to automatically identify\n%s" % ( ui.colorize(
-            self.file_info.path ) )
+            self.file_info.path, 31 ) )
         if ui.question_yn( "Want to manually search by name?" ):
             print "Enter name: ",
             search_name = raw_input().lower()

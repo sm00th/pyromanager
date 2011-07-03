@@ -4,6 +4,7 @@ import subprocess
 import ConfigParser
 
 DEFAULT_RC = os.path.expanduser( "~/.pyromgr.rc" )
+CONFIGURABLE_PATHS = [ 'db_file', 'xml_file', 'flashcart', 'tmp_dir' ]
 LOCATIONS = {
     0  : ( 'Europe'      , 'EUR'   , 'E' ),
     1  : ( 'USA'         , 'USA'   , 'U' ),
@@ -71,7 +72,7 @@ class Config:
         parser = ConfigParser.ConfigParser()
 
         parser.add_section( 'paths' )
-        for file_type in [ 'db_file', 'xml_file', 'flashcart', 'tmp_dir' ]:
+        for file_type in CONFIGURABLE_PATHS:
             parser.set( 'paths', file_type, self._paths[file_type] )
 
         parser.add_section( 'saves' )
@@ -90,7 +91,7 @@ class Config:
             return
 
         if parser.has_section( 'paths' ):
-            for file_type in [ 'db_file', 'xml_file', 'flashcart', 'tmp_dir' ]:
+            for file_type in CONFIGURABLE_PATHS:
                 if parser.has_option( 'paths', file_type ):
                     self._paths[file_type] = parser.get( 'paths', file_type )
         if parser.has_section( 'saves' ):

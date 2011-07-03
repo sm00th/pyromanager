@@ -423,7 +423,7 @@ class Nds:
 
 class Archive:
     '''Generic archive handler'''
-    def __init__( self, path, tmp_dir ):
+    def __init__( self, path, tmp_dir = "/tmp" ):
         self.path      = os.path.abspath( path )
         self.tmp_dir   = os.path.abspath( tmp_dir )
         self.file_list = []

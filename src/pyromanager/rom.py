@@ -32,9 +32,9 @@ class RomInfo:
 
 class FileInfo:
     '''Local file information'''
-    def __init__( self, path, database, config, lid = None ):
+    def __init__( self, path, database, tmp_dir, lid = None ):
         self.database  = database
-        self.config    = config
+        self.tmp_dir   = tmp_dir
         self.nds       = None
         self.name_info = None
         self.db_info   = None
@@ -57,7 +57,7 @@ class FileInfo:
         nds = None
         if self.is_archived():
             ( archive_path, nds_name ) = self._split_path()
-            archive = archive_obj( archive_path, self.config )
+            archive = archive_obj( archive_path, self.tmp_dir )
             nds = archive.get_nds( nds_name )
         else:
             nds = Nds( self.path )
@@ -151,7 +151,7 @@ class FileInfo:
 
         if self.is_archived():
             ( archive_path, nds_name ) = self._split_path()
-            archive = archive_obj( archive_path, self.config )
+            archive = archive_obj( archive_path, self.tmp_dir )
             archive.extract( nds_name, path )
             os.rename( '%s/%s' % ( path, nds_name ),
                     '%s/%s' % ( path, filename ) )
@@ -179,7 +179,7 @@ class Rom:
 
         if not self.file_info:
             self.file_info = FileInfo( os.path.abspath( path ), database,
-                    config )
+                    config.tmp_dir )
 
     def is_valid( self ):
         '''If rom is valid'''
@@ -423,9 +423,9 @@ class Nds:
 
 class Archive:
     '''Generic archive handler'''
-    def __init__( self, path, config ):
+    def __init__( self, path, tmp_dir ):
         self.path      = os.path.abspath( path )
-        self.config    = config
+        self.tmp_dir   = os.path.abspath( tmp_dir )
         self.file_list = []
 
     def is_valid( self ):
@@ -446,8 +446,8 @@ class Archive:
 
     def get_nds( self, nds_name ):
         '''Get parsed nds object from archive'''
-        self.extract( nds_name, self.config.tmp_dir )
-        tmp_file = '%s/%s' % ( self.config.tmp_dir, nds_name )
+        self.extract( nds_name, self.tmp_dir )
+        tmp_file = '%s/%s' % ( self.tmp_dir, nds_name )
         nds = Nds( tmp_file )
         nds.parse()
         os.unlink( tmp_file )
@@ -519,16 +519,16 @@ class Rar( Archive ):
         decompress.wait()
         return "%s/%s" % ( path, archive_file )
 
-def archive_obj( path, config ):
+def archive_obj( path, tmp_dir ):
     '''Create archive object based on path(extension)'''
     obj = None
     ext = extension( path )
     if ext == 'zip':
-        obj = Zip( path, config )
+        obj = Zip( path, tmp_dir )
     if ext == '7z':
-        obj = Zip7( path, config )
+        obj = Zip7( path, tmp_dir )
     if ext == 'rar':
-        obj = Rar( path, config )
+        obj = Rar( path, tmp_dir )
     return obj
 
 def strip_name( name ):
@@ -620,7 +620,7 @@ def search( path, config ):
                         result.append( file_path )
                     else:
                         try:
-                            archive = archive_obj( file_path, config )
+                            archive = archive_obj( file_path, config.tmp_dir )
                             archive.scan_files()
                             for arc_path in archive.full_paths():
                                 result.append( arc_path )

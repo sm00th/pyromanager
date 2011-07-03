@@ -136,7 +136,8 @@ class rom_test( unittest.TestCase ):
         self.assertEqual( rominfo.__str__(), '4710 - Coropata (JPN) [BAHAMUT]' )
 
     def test_FileInfo_file( self ):
-        finfo = pyromanager.rom.FileInfo( 'tests/TinyFB.nds', self.db, self.config )
+        finfo = pyromanager.rom.FileInfo( 'tests/TinyFB.nds', self.db,
+                self.config.tmp_dir )
         self.assertFalse( finfo.is_initialized() )
         finfo.init()
         self.assertTrue( finfo.is_initialized() )
@@ -150,11 +151,13 @@ class rom_test( unittest.TestCase ):
         self.assertEqual( finfo.__str__(), "tinyfb (tests/TinyFB.nds)" )
 
     def test_FileInfo_invalid( self ):
-        finfo = pyromanager.rom.FileInfo( 'tests/fake.nds', self.db, self.config )
+        finfo = pyromanager.rom.FileInfo( 'tests/fake.nds', self.db,
+                self.config.tmp_dir )
         self.assertFalse( finfo.is_valid() )
 
     def test_FileInfo_archive( self ):
-        finfo = pyromanager.rom.FileInfo( 'tests/TinyFB.zip:TinyFB.nds', self.db, self.config )
+        finfo = pyromanager.rom.FileInfo( 'tests/TinyFB.zip:TinyFB.nds',
+                self.db, self.config.tmp_dir )
         self.assertFalse( finfo.is_initialized() )
         finfo.init()
         self.assertTrue( finfo.is_initialized() )
@@ -165,7 +168,7 @@ class rom_test( unittest.TestCase ):
     def test_FileInfo_lid( self ):
         self.db.add_local( ( 4999, '/some/path/to/file.nds', 'something',
             123187123, 9812312 ) )
-        finfo = pyromanager.rom.FileInfo( None, self.db, self.config, 1 )
+        finfo = pyromanager.rom.FileInfo( None, self.db, self.config.tmp_dir, 1 )
         self.assertTrue( finfo.is_initialized() )
         self.assertEqual( finfo.normalized_name, 'file' )
         self.assertEqual( finfo.size, 123187123 )

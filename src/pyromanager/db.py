@@ -2,7 +2,6 @@
 import re, os, time, shutil
 import urllib2
 import sqlite3
-import cfg
 from rom import mkdir, strip_name, Zip
 from xml.dom import minidom
 
@@ -253,7 +252,7 @@ class AdvansceneXML():
                 file_handler = open( zip_path, 'w' )
                 file_handler.write( url_handler.read() )
                 file_handler.close()
-                archive = Zip( zip_path, self.config )
+                archive = Zip( zip_path, self.config.tmp_dir )
                 archive.scan_files( 'xml' )
                 archive_xml = archive.file_list[0]
                 archive.extract( archive_xml, self.config.tmp_dir )

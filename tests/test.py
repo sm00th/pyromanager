@@ -127,7 +127,7 @@ class rom_test( unittest.TestCase ):
         os.unlink( self.config.db_file )
 
     def test_RomInfo( self ):
-        rominfo = pyromanager.rom.RomInfo( 4710, self.db )
+        rominfo = pyromanager.rom.RomInfo( self.db.rom_info( 4710 ) )
         self.assertEqual( rominfo.filename, '4710 - Coropata (JPN).nds' )
         self.assertEqual( rominfo.__str__(), '4710 - Coropata (JPN) [BAHAMUT]' )
 

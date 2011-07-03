@@ -6,18 +6,16 @@ from cfg import region_name, region_code
 
 class RomInfo:
     '''Rom information from database'''
-    def __init__( self, release_id, database ):
-        self.relid           = release_id
-        self.database        = database
+    def __init__( self, db_info ):
+        self.relid           = None
         self.name            = None
         self.publisher       = None
         self.released_by     = None
         self.region          = None
         self.normalized_name = None
 
-        ( self.name, self.publisher, self.released_by, self.region,
-                self.normalized_name ) = self.database.rom_info( self.relid
-                        )[1:6]
+        ( self.relid, self.name, self.publisher, self.released_by, self.region,
+                self.normalized_name ) = db_info
 
     @property
     def filename( self ):
@@ -208,7 +206,7 @@ class Rom:
         '''Confirm that file was detected right'''
         result = None
         if type( relid ) == int:
-            rom_obj = RomInfo( relid, self.database )
+            rom_obj = RomInfo( self.database.rom_info( relid ) )
             print "%s\nIdentified as %s" % (
                     ui.colorize( os.path.basename( self.file_info.path ), 31 ),
                     rom_obj
@@ -217,7 +215,7 @@ class Rom:
         elif type( relid ) == list:
             pre_msg = "%s\nCan be one of the following:" % (
                     ui.colorize( os.path.basename( self.file_info.path ), 31 ) )
-            rom_list = [ RomInfo( release_id, self.database ) for
+            rom_list = [ RomInfo( self.database.rom_info( release_id ) ) for
                 release_id in relid ]
             result = ui.list_question( pre_msg, rom_list, "Which one?" )
         print
@@ -285,7 +283,7 @@ class Rom:
                                 search_name, table = 'known' )
                         if relid_list:
                             relid = self._name_search( relid_list )
-        return RomInfo( relid, self.database )
+        return RomInfo( self.database.rom_info( relid ) )
 
     @property
     def path( self ):

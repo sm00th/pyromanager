@@ -1,5 +1,5 @@
 '''Provides interfaces to databases'''
-import re, os, time, shutil
+import re, os, time
 import urllib2
 import sqlite3
 from rom import mkdir, strip_name, Zip

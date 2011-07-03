@@ -107,8 +107,8 @@ class SQLdb():
         cursor  = self.database.cursor()
         try:
             id_list = cursor.execute(
-                'SELECT %s FROM local WHERE %s=? ORDER BY id' % ( retval, column ),
-                ( search_val, ) ).fetchall()
+                'SELECT %s FROM local WHERE %s=? ORDER BY id' % ( retval,
+                    column ), ( search_val, ) ).fetchall()
             if id_list:
                 result = [ local_id[0] for local_id in id_list ]
         except sqlite3.OperationalError:

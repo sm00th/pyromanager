@@ -4,6 +4,37 @@ import subprocess
 import ConfigParser
 
 DEFAULT_RC = os.path.expanduser( "~/.pyromgr.rc" )
+LOCATIONS = {
+    0  : ( 'Europe'      , 'EUR'   , 'E' ),
+    1  : ( 'USA'         , 'USA'   , 'U' ),
+    2  : ( 'Germany'     , 'GER'   , 'G' ),
+    4  : ( 'Spain'       , 'SPA'   , 'S' ),
+    5  : ( 'France'      , 'FRA'   , 'F' ),
+    6  : ( 'Italy'       , 'ITA'   , 'I' ),
+    7  : ( 'Japan'       , 'JPN'   , 'J' ),
+    8  : ( 'Netherlands' , 'DUTCH' , 'N' ),
+    19 : ( 'Australia'   , 'AUS'   , 'A' ),
+    22 : ( 'Korea'       , 'KOR'   , 'K' ),
+}
+
+def region_code( name ):
+    '''Translates region name to it's code (int)'''
+    for ( location_id, aliases ) in LOCATIONS.iteritems():
+        if name.lower() in [ x.lower() for x in aliases ]:
+            return location_id
+    return None
+
+def region_name( location_id, return_type=1 ):
+    '''Translates region code to it's name(str)'''
+    result = 'Unknown: %d' % location_id
+    if return_type not in range(3):
+        return_type = 1
+    try:
+        result = LOCATIONS[location_id][return_type]
+    except KeyError:
+        pass
+
+    return result
 
 def is_bin_available( binfile ):
     '''Determine if binary is somewhere in $PATH'''
@@ -32,18 +63,6 @@ class Config:
         }
         self._saves = {
                 'extension' : 'sav'
-        }
-        self._locations = {
-            0  : ( 'Europe'      , 'EUR'   , 'E' ),
-            1  : ( 'USA'         , 'USA'   , 'U' ),
-            2  : ( 'Germany'     , 'GER'   , 'G' ),
-            4  : ( 'Spain'       , 'SPA'   , 'S' ),
-            5  : ( 'France'      , 'FRA'   , 'F' ),
-            6  : ( 'Italy'       , 'ITA'   , 'I' ),
-            7  : ( 'Japan'       , 'JPN'   , 'J' ),
-            8  : ( 'Netherlands' , 'DUTCH' , 'N' ),
-            19 : ( 'Australia'   , 'AUS'   , 'A' ),
-            22 : ( 'Korea'       , 'KOR'   , 'K' ),
         }
         self._extensions = None
 
@@ -125,22 +144,3 @@ class Config:
                 self._extensions.append( 'rar' )
 
         return self._extensions
-
-    def region_code( self, name ):
-        '''Translates region name to it's code (int)'''
-        for ( location_id, aliases ) in self._locations.iteritems():
-            if name.lower() in [ x.lower() for x in aliases ]:
-                return location_id
-        return None
-
-    def region_name( self, location_id, return_type=1 ):
-        '''Translates region code to it's name(str)'''
-        result = 'Unknown: %d' % location_id
-        if return_type not in range(3):
-            return_type = 1
-        try:
-            result = self._locations[location_id][return_type]
-        except KeyError:
-            pass
-
-        return result

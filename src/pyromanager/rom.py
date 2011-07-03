@@ -2,13 +2,13 @@
 import os, re, zipfile, subprocess, shutil
 import struct, binascii, time
 import ui
+from cfg import region_name, region_code
 
 class RomInfo:
     '''Rom information from database'''
-    def __init__( self, release_id, database, config ):
+    def __init__( self, release_id, database ):
         self.relid           = release_id
         self.database        = database
-        self.config          = config
         self.name            = None
         self.publisher       = None
         self.released_by     = None
@@ -24,11 +24,11 @@ class RomInfo:
         '''Formatted filename'''
         return "%04d - %s (%s).nds" % (
                 int( self.relid ), self.name, 
-                self.config.region_name( self.region ) )
+                region_name( self.region ) )
 
     def __str__( self ):
         return "%4s - %s (%s) [%s]" % ( self.relid, self.name,
-                self.config.region_name( self.region ), self.released_by )
+                region_name( self.region ), self.released_by )
 
 class FileInfo:
     '''Local file information'''
@@ -68,7 +68,7 @@ class FileInfo:
 
     def _parse_name( self ):
         '''Parse filename'''
-        ( relid, name, region ) = parse_filename( self.path, self.config )
+        ( relid, name, region ) = parse_filename( self.path )
         self.name_info = {
             'release_id'      : relid,
             'normalized_name' : name,
@@ -208,7 +208,7 @@ class Rom:
         '''Confirm that file was detected right'''
         result = None
         if type( relid ) == int:
-            rom_obj = RomInfo( relid, self.database, self.config )
+            rom_obj = RomInfo( relid, self.database )
             print "%s\nIdentified as %s" % (
                     ui.colorize( os.path.basename( self.file_info.path ), 31 ),
                     rom_obj
@@ -217,7 +217,7 @@ class Rom:
         elif type( relid ) == list:
             pre_msg = "%s\nCan be one of the following:" % (
                     ui.colorize( os.path.basename( self.file_info.path ), 31 ) )
-            rom_list = [ RomInfo( release_id, self.database, self.config ) for
+            rom_list = [ RomInfo( release_id, self.database ) for
                 release_id in relid ]
             result = ui.list_question( pre_msg, rom_list, "Which one?" )
         print
@@ -261,16 +261,20 @@ class Rom:
             relid = self.file_info.db_info['relid']
         else:
             try:
-                relid = self.database.search_crc( self.file_info.crc, 'known' )[0]
+                relid = self.database.search_crc( self.file_info.crc, 
+                        'known' )[0]
             except( TypeError, IndexError ):
                 pass
             if not relid:
                 relid_list = self.database.search_name(
                         self.file_info.normalized_name,
                         self.file_info.name_info['region'], table = 'known' )
-                if ( self.file_info.name_info['release_id'] in relid_list ) or (
-                        self.file_info.name_info['release_id'] and self._confirm_file(
-                            self.file_info.name_info['release_id'] ) ):
+                if ( self.file_info.name_info['release_id'] in relid_list ) or \
+                        (
+                            self.file_info.name_info['release_id'] and \
+                            self._confirm_file(
+                            self.file_info.name_info['release_id'] )
+                        ):
                     relid = self.file_info.name_info['release_id']
                 elif relid_list:
                     relid = self._name_search( relid_list )
@@ -281,7 +285,7 @@ class Rom:
                                 search_name, table = 'known' )
                         if relid_list:
                             relid = self._name_search( relid_list )
-        return RomInfo( relid, self.database, self.config )
+        return RomInfo( relid, self.database )
 
     @property
     def path( self ):
@@ -537,7 +541,7 @@ def strip_name( name ):
 
     return name
 
-def parse_filename( filename, config ):
+def parse_filename( filename ):
     '''Parse rom name'''
     release_number = None
 
@@ -562,7 +566,7 @@ def parse_filename( filename, config ):
     region = None
     for tag in re.findall( r"(\(|\[)(\w+)(\)|\])", filename ):
         if not region:
-            region = config.region_code( tag[1] )
+            region = region_code( tag[1] )
 
     filename = strip_name( filename )
 
@@ -645,10 +649,10 @@ def get_save( path, save_ext = 'sav' ):
             if( extension( filename ) == save_ext ):
                 return '%s/%s' % ( save_path, filename )
 
-def identify( path, database, config ):
+def identify( path, database ):
     '''Get local id by path'''
     local_id = None
-    relid = parse_filename( path, config )[0]
+    relid = parse_filename( path )[0]
     if relid:
         id_list = database.search_local( 'id', 'release_id', relid )
         if id_list:

@@ -212,7 +212,7 @@ class Cli( cmdln.Cmdln ):
         for nds_path in rom.search( path, self.config ):
             save_path = rom.get_save( nds_path, self.config.save_ext )
             if save_path:
-                local_id = rom.identify( nds_path, self.database, self.config )
+                local_id = rom.identify( nds_path, self.database )
                 if local_id:
                     relid = None
                     try:

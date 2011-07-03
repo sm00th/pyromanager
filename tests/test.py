@@ -29,18 +29,17 @@ class cfg_test( unittest.TestCase ):
             'there_is_no_way_this_is_in_your_path' ) )
 
     def test_regions( self ):
-        config = pyromanager.cfg.Config()
-        self.assertEqual( config.region_name( 0 ), 'EUR' )
-        self.assertEqual( config.region_name( 0, 0 ), 'Europe' )
-        self.assertEqual( config.region_name( 0, 1 ), 'EUR' )
-        self.assertEqual( config.region_name( 0, 2 ), 'E' )
-        self.assertEqual( config.region_name( 0, 9 ), 'EUR' )
-        self.assertEqual( config.region_name( 999 ), 'Unknown: 999' )
+        self.assertEqual( pyromanager.cfg.region_name( 0 ), 'EUR' )
+        self.assertEqual( pyromanager.cfg.region_name( 0, 0 ), 'Europe' )
+        self.assertEqual( pyromanager.cfg.region_name( 0, 1 ), 'EUR' )
+        self.assertEqual( pyromanager.cfg.region_name( 0, 2 ), 'E' )
+        self.assertEqual( pyromanager.cfg.region_name( 0, 9 ), 'EUR' )
+        self.assertEqual( pyromanager.cfg.region_name( 999 ), 'Unknown: 999' )
 
-        self.assertEqual( config.region_code( 'Japan' ), 7 )
-        self.assertEqual( config.region_code( 'JPN' ), 7 )
-        self.assertEqual( config.region_code( 'J' ), 7 )
-        self.assertEqual( config.region_code( 'Zimbabwe' ), None )
+        self.assertEqual( pyromanager.cfg.region_code( 'Japan' ), 7 )
+        self.assertEqual( pyromanager.cfg.region_code( 'JPN' ), 7 )
+        self.assertEqual( pyromanager.cfg.region_code( 'J' ), 7 )
+        self.assertEqual( pyromanager.cfg.region_code( 'Zimbabwe' ), None )
 
     def test_rc( self ):
         config = pyromanager.cfg.Config( 'tests/test.rc' )
@@ -132,7 +131,7 @@ class rom_test( unittest.TestCase ):
         os.unlink( self.config.db_file )
 
     def test_RomInfo( self ):
-        rominfo = pyromanager.rom.RomInfo( 4710, self.db, self.config )
+        rominfo = pyromanager.rom.RomInfo( 4710, self.db )
         self.assertEqual( rominfo.filename, '4710 - Coropata (JPN).nds' )
         self.assertEqual( rominfo.__str__(), '4710 - Coropata (JPN) [BAHAMUT]' )
 
@@ -213,10 +212,8 @@ class rom_test( unittest.TestCase ):
             "3776 - Broken Sword - Shadow of the Templars - The Director's Cut (USA) (En,Fr,De,Es,It).nds" : 
                 ( 3776, "broken sword shadow of templars directors cut", 1 ),
         }
-        config = pyromanager.cfg.Config( 'tests/test.rc' )
         for( fileName, expectedResult ) in testNames.iteritems():
-            self.assertTupleEqual( pyromanager.rom.parse_filename( fileName,
-                config ), expectedResult )
+            self.assertTupleEqual( pyromanager.rom.parse_filename( fileName ), expectedResult )
 
     def test_extension( self ):
         self.assertEqual( pyromanager.rom.extension( 'path/to/somefile.wTf' ),

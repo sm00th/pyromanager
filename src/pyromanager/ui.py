@@ -152,7 +152,7 @@ class Cli( cmdln.Cmdln ):
                     self.database.search_crc( crc, table = 'local' )
             )
 
-            pre_msg = "%d duplicates found for %s" % ( entries, rom_list[0] ) +\
+            pre_msg = "%d duplicates found for %s\n" % ( entries, rom_list[0] ) +\
                 "Delete all but one(None - let all be)"
             answer = list_question( pre_msg, rom_list, "Which one?" )
             if answer != None:

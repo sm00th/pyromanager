@@ -61,7 +61,7 @@ class db_test( unittest.TestCase ):
         self.config = pyromanager.cfg.Config( 'tests/test.rc' )
         self.config._paths['assets_dir'] = 'tests'
         self.config.read_config()
-        self.db = pyromanager.db.SQLdb( self.config.db_file, self.config )
+        self.db = pyromanager.db.SQLdb( self.config.db_file )
 
     def tearDown( self ):
         del( self.db )
@@ -120,7 +120,7 @@ class rom_test( unittest.TestCase ):
         self.config = pyromanager.cfg.Config( 'tests/test.rc' )
         self.config._paths['assets_dir'] = 'tests'
         self.config.read_config()
-        self.db = pyromanager.db.SQLdb( self.config.db_file, self.config )
+        self.db = pyromanager.db.SQLdb( self.config.db_file )
 
         xmldb = pyromanager.db.AdvansceneXML( 'tests/nds.xml', self.config )
         xmldb.parse()

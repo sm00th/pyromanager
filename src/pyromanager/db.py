@@ -8,10 +8,9 @@ from xml.dom import minidom
 
 class SQLdb():
     '''Interface for sqlite3 database'''
-    def __init__( self, db_file = None, config = cfg.Config() ):
-        config.read_config()
-        mkdir( config.assets_dir )
-        self.database = sqlite3.connect( db_file or config.db_file )
+    def __init__( self, db_file = None ):
+        mkdir( os.path.dirname( db_file ) )
+        self.database = sqlite3.connect( db_file )
 
     def __del__( self ):
         self.database.close()

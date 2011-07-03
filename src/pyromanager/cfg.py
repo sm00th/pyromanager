@@ -4,7 +4,7 @@ import subprocess
 import ConfigParser
 
 DEFAULT_RC = os.path.expanduser( "~/.pyromgr.rc" )
-CONFIGURABLE_PATHS = [ 'db_file', 'xml_file', 'flashcart', 'tmp_dir' ]
+CONFIGURABLE_PATHS = [ 'db_file', 'flashcart', 'tmp_dir' ]
 LOCATIONS = {
     0  : ( 'Europe'      , 'EUR'   , 'E' ),
     1  : ( 'USA'         , 'USA'   , 'U' ),
@@ -58,7 +58,6 @@ class Config:
                 'assets_dir'  : os.path.expanduser( "~/.pyromgr" ),
                 'saves_dir' : 'saves',
                 'db_file'   : 'pyromgr.db',
-                'xml_file'  : 'advanscene.xml',
                 'tmp_dir'   : '/tmp',
                 'flashcart' : '/mnt/ds',
         }
@@ -118,11 +117,6 @@ class Config:
     def db_file( self ):
         '''Full path to sqlite database file'''
         return '%s/%s' % ( self._paths['assets_dir'], self._paths['db_file'] )
-
-    @property
-    def xml_file( self ):
-        '''Full path to advanscene xml file'''
-        return '%s/%s' % ( self._paths['assets_dir'], self._paths['xml_file'] )
 
     @property
     def saves_dir( self ):

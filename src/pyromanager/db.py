@@ -37,6 +37,11 @@ class SQLdb():
             'crc NUMERIC,' + \
             'UNIQUE( path ) ON CONFLICT REPLACE);'
         )
+        cursor.execute(
+            'CREATE TABLE IF NOT EXISTS db_info ' + \
+            '(key TEXT PRIMARY KEY,' +\
+            'val TEXT );'
+        )
         cursor.close()
         self.save()
 
@@ -50,7 +55,36 @@ class SQLdb():
                 'INSERT OR REPLACE INTO known VALUES(?,?,?,?,?,?,?)',
                 data
             )
+        self.updated()
         cursor.close()
+
+    def updated( self ):
+        '''Sets db_info.u_time to current time'''
+        self._create_tables()
+
+        cursor = self.database.cursor()
+        cursor.execute(
+            'INSERT OR REPLACE INTO db_info VALUES(?,?)',
+            ( 'u_time', '%d' % ( time.time() ) )
+        )
+        cursor.close()
+
+    @property
+    def last_updated( self ):
+        '''Returns time when database was last updated'''
+        u_time = 0
+        cursor = self.database.cursor()
+        try:
+            returned = cursor.execute(
+                'SELECT val FROM db_info WHERE key = "u_time"',
+            ).fetchone()
+            if returned:
+                u_time = int( returned[0] )
+        except sqlite3.OperationalError:
+            self._create_tables()
+
+        cursor.close()
+        return u_time
 
     def search_crc( self, crc, table = 'known' ):
         '''Search roms by crc, returns list'''
@@ -124,7 +158,6 @@ class SQLdb():
         except sqlite3.OperationalError:
             self._create_tables()
         cursor.close()
-
 
     def file_info( self, lid ):
         '''Returns file information from local table by given local id'''
@@ -230,34 +263,36 @@ class SQLdb():
 
 class AdvansceneXML():
     '''Advanscene xml parser'''
-    def __init__( self, path, config ):
+    def __init__( self, path = None ):
         self.path     = path
-        self.config   = config
         self.rom_list = []
 
-    def update( self ):
+    def update( self, database, tmp_dir ):
         '''Download new xml from advanscene'''
-        mkdir( self.config.assets_dir )
         updated    = False
         dat_url    = 'http://advanscene.com/offline/datas/ADVANsCEne_NDS_S.zip'
-        zip_path   = '%s/%s' % ( self.config.tmp_dir, dat_url.split('/')[-1] )
+        zip_path   = '%s/%s' % ( tmp_dir, dat_url.split('/')[-1] )
 
         try:
             url_handler = urllib2.urlopen( dat_url )
-            if not( os.path.exists( self.config.xml_file ) ) or time.gmtime(
-                    os.stat( self.config.xml_file ).st_mtime ) < time.strptime(
+            if time.gmtime( database.last_updated ) < time.strptime(
                     url_handler.info().getheader( 'Last-Modified' ),
                     '%a, %d %b %Y %H:%M:%S %Z' ):
                 updated = True
                 file_handler = open( zip_path, 'w' )
                 file_handler.write( url_handler.read() )
                 file_handler.close()
-                archive = Zip( zip_path, self.config.tmp_dir )
+                archive = Zip( zip_path, tmp_dir )
                 archive.scan_files( 'xml' )
                 archive_xml = archive.file_list[0]
-                archive.extract( archive_xml, self.config.tmp_dir )
-                shutil.move( '%s/%s' % ( self.config.tmp_dir, archive_xml ),
-                        self.config.xml_file )
+                archive.extract( archive_xml, tmp_dir )
+
+                tmp_db = '%s/%s' % ( tmp_dir, archive_xml )
+                self.path = tmp_db
+                self.parse()
+                database.import_known( self )
+
+                os.unlink( tmp_db )
                 os.unlink( zip_path )
         except urllib2.URLError as exc:
             print "Unable to download xml: %s" % ( exc )

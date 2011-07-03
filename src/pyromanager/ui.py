@@ -172,10 +172,8 @@ class Cli( cmdln.Cmdln ):
         ${cmd_option_list}
         """
 
-        xml = db.AdvansceneXML( self.config.xml_file, self.config )
-        if xml.update() or opts.force:
-            xml.parse()
-            self.database.import_known( xml )
+        xml = db.AdvansceneXML()
+        if xml.update( self.database, self.config.tmp_dir ) or opts.force:
             self.database.save()
             print "Database updated"
         else:

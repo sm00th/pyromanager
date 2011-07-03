@@ -11,8 +11,6 @@ class cfg_test( unittest.TestCase ):
             '~/.pyromgr.rc' ) )
         self.assertEqual( config.db_file, os.path.expanduser(
             '~/.pyromgr/pyromgr.db' ) )
-        self.assertEqual( config.xml_file, os.path.expanduser(
-            '~/.pyromgr/advanscene.xml' ) )
         self.assertEqual( config.flashcart, os.path.expanduser(
             '/mnt/ds' ) )
         self.assertEqual( config.tmp_dir, os.path.expanduser(
@@ -47,8 +45,6 @@ class cfg_test( unittest.TestCase ):
         self.assertEqual( config.rc_file, 'tests/test.rc' )
         self.assertEqual( config.db_file, os.path.expanduser(
             '~/.pyromgr/sql.db' ) )
-        self.assertEqual( config.xml_file, os.path.expanduser(
-            '~/.pyromgr/adv.xml' ) )
         self.assertEqual( config.flashcart, '/home/someuser/flash' )
         self.assertEqual( config.tmp_dir, '/tmp' )
         self.assertEqual( config.saves_dir, os.path.expanduser(
@@ -68,7 +64,7 @@ class db_test( unittest.TestCase ):
         os.unlink( self.config.db_file )
 
     def test_db( self ):
-        xmldb = pyromanager.db.AdvansceneXML( 'tests/nds.xml', self.config )
+        xmldb = pyromanager.db.AdvansceneXML( 'tests/nds.xml' )
         xmldb.parse()
         self.assertEqual( len( xmldb )    , 7 )
         self.assertTupleEqual( xmldb[0], (4710, u'Coropata', 3076538459L,
@@ -122,7 +118,7 @@ class rom_test( unittest.TestCase ):
         self.config.read_config()
         self.db = pyromanager.db.SQLdb( self.config.db_file )
 
-        xmldb = pyromanager.db.AdvansceneXML( 'tests/nds.xml', self.config )
+        xmldb = pyromanager.db.AdvansceneXML( 'tests/nds.xml' )
         xmldb.parse()
         self.db.import_known( xmldb )
 

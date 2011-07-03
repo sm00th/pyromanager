@@ -106,8 +106,8 @@ class Cli( cmdln.Cmdln ):
         for term in terms:
             for local_id in self.database.search_name( term, table = 'local' ):
                 rom_obj = rom.Rom( None, self.database, self.config, file_info =
-                        rom.FileInfo( None, self.database, self.config,
-                            local_id ) )
+                        rom.FileInfo( None, self.config,
+                            self.database.file_info( local_id ) ) )
                 print rom_obj
 
     @cmdln.alias( "u", "up" )
@@ -123,8 +123,8 @@ class Cli( cmdln.Cmdln ):
 
         rom_list = map(
                 lambda id: rom.Rom( None, self.database, self.config,
-                    file_info = rom.FileInfo( None, self.database, self.config,
-                        id ) ),
+                    file_info = rom.FileInfo( None, self.config,
+                        self.database.file_info( id ) ) ),
                 self.database.search_name( name, table = 'local' )
         )
         answer = list_question( "Possible roms:", rom_list, "Which one?" )
@@ -147,8 +147,8 @@ class Cli( cmdln.Cmdln ):
         for ( entries, crc ) in self.database.find_dupes():
             rom_list = map(
                     lambda id: rom.Rom( None, self.database, self.config,
-                        file_info = rom.FileInfo( None, self.database,
-                            self.config, id ) ),
+                        file_info = rom.FileInfo( None, self.config,
+                            self.database.file_info( id ) ) ),
                     self.database.search_crc( crc, table = 'local' )
             )
 

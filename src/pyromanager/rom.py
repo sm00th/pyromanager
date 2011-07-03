@@ -30,8 +30,7 @@ class RomInfo:
 
 class FileInfo:
     '''Local file information'''
-    def __init__( self, path, database, tmp_dir, lid = None ):
-        self.database  = database
+    def __init__( self, path, tmp_dir, db_info = None ):
         self.tmp_dir   = tmp_dir
         self.nds       = None
         self.name_info = None
@@ -40,8 +39,8 @@ class FileInfo:
 
         if path:
             self.path = path
-        elif lid != None:
-            ( release_id, path, size, crc ) = self.database.file_info( lid )
+        elif db_info != None:
+            ( release_id, path, size, crc ) = db_info
             self.path = path
             self.db_info = {
                     'relid' : release_id,
@@ -160,7 +159,6 @@ class FileInfo:
         '''Delete file and remove from local table'''
         path = re.sub( r":.*$", '', self.path )
         os.unlink( path )
-        self.database.remove_local( path )
 
     def __str__( self ):
         return '%s (%s)' % ( self.name_info['normalized_name'], self.path )
@@ -176,7 +174,7 @@ class Rom:
         self.file_info = file_info
 
         if not self.file_info:
-            self.file_info = FileInfo( os.path.abspath( path ), database,
+            self.file_info = FileInfo( os.path.abspath( path ),
                     config.tmp_dir )
 
     def is_valid( self ):
@@ -302,6 +300,7 @@ class Rom:
 
     def remove( self ):
         '''Remove file from disk and local table'''
+        self.database.remove_local( re.sub( r":.*$", '', self.file_info.path ) )
         self.file_info.remove()
 
     def upload( self, path ):

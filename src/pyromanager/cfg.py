@@ -27,7 +27,10 @@ def region_code( name ):
 
 def region_name( location_id, return_type=1 ):
     '''Translates region code to it's name(str)'''
-    result = 'Unknown: %d' % location_id
+    if location_id:
+        result = 'Unknown: %d' % location_id
+    else:
+        result = 'Unknown'
     if return_type not in range(3):
         return_type = 1
     try:

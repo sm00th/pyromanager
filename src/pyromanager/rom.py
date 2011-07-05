@@ -21,7 +21,7 @@ class RomInfo:
     def filename( self ):
         '''Formatted filename'''
         return "%04d - %s (%s).nds" % (
-                int( self.relid ), self.name, 
+                int( self.relid ), self.name,
                 region_name( self.region ) )
 
     def __str__( self ):
@@ -257,7 +257,7 @@ class Rom:
             relid = self.file_info.db_info['relid']
         else:
             try:
-                relid = self.database.search_crc( self.file_info.crc, 
+                relid = self.database.search_crc( self.file_info.crc,
                         'known' )[0]
             except( TypeError, IndexError ):
                 pass
@@ -510,7 +510,7 @@ class Rar( Archive ):
 
     def extract( self, archive_file, path ):
         '''Extract specified file to path'''
-        decompress = subprocess.Popen( [ 'unrar', 'x', '-y', self.path, 
+        decompress = subprocess.Popen( [ 'unrar', 'x', '-y', self.path,
             archive_file, path ], stdout = subprocess.PIPE,
             stderr = subprocess.PIPE )
         decompress.wait()
@@ -590,7 +590,7 @@ def byte_to_string( byte_string ):
 
 def byte_to_int( byte_string ):
     '''Decodes bytestring as int'''
-    return struct.unpack( 
+    return struct.unpack(
         'i',
         byte_string +
         ( '\x00' * ( 4 - len( byte_string ) ) )
@@ -632,16 +632,18 @@ def import_path( path, opts, database, config ):
     '''Import roms from path'''
     for rom_path in search( path, config ):
         rom = Rom( rom_path, database, config )
-        if ( ( opts and opts.full_rescan ) or not rom.is_in_db() ) \
-                and rom.is_valid():
-            rom.add_to_db()
+        if ( opts and opts.full_rescan ) or not rom.is_in_db():
+            if rom.is_valid():
+                rom.add_to_db()
+            else:
+                print 'File is invalid: %s' % ui.colorize( rom_path, 31 )
 
 def get_save( path, save_ext = 'sav' ):
     '''Search for savefile of given rom'''
     ( save_path, nds_name ) = os.path.split( path )
     nds_name = os.path.splitext( nds_name )[0]
     for filename in os.listdir( save_path ):
-        if os.path.isfile( '%s/%s' % ( save_path, filename ) ) and ( 
+        if os.path.isfile( '%s/%s' % ( save_path, filename ) ) and (
                 nds_name in filename ):
             if( extension( filename ) == save_ext ):
                 return '%s/%s' % ( save_path, filename )

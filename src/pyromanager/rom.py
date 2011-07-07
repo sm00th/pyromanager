@@ -146,14 +146,17 @@ class FileInfo:
         if not filename:
             filename = re.sub( r"^.*(/|:)", '', self.path )
 
-        if self.is_archived():
-            ( archive_path, nds_name ) = self._split_path()
-            archive = archive_obj( archive_path, self.tmp_dir )
-            archive.extract( nds_name, path )
-            os.rename( '%s/%s' % ( path, nds_name ),
-                    '%s/%s' % ( path, filename ) )
-        else:
-            shutil.copy( self.path, '%s/%s' % ( path, filename ) )
+        try:
+            if self.is_archived():
+                ( archive_path, nds_name ) = self._split_path()
+                archive = archive_obj( archive_path, self.tmp_dir )
+                archive.extract( nds_name, path )
+                os.rename( '%s/%s' % ( path, nds_name ),
+                        '%s/%s' % ( path, filename ) )
+            else:
+                shutil.copy( self.path, '%s/%s' % ( path, filename ) )
+        except( IOError, OSError ) as exc:
+            print '[ERROR] Upload failed: %s' % ( exc )
 
     def remove( self ):
         '''Delete file and remove from local table'''

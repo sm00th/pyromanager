@@ -1,3 +1,6 @@
+ABOUT
+-----
+
 pyROManager is a nds-rom management system written in python.
 
 The project is still in a very early stage, however it is usable.
@@ -5,11 +8,23 @@ Some of the current features:
  - Rom database updates using ADVANsCEne (http://advanscene.com/) dat-files.
  - Automatic rom identification by crc, name or releaseid.
  - Archive support with multiple roms per archive.
-    * You would need 7z and unrar binaries in your $PATH to use those types of archives
+    * You would need 7z and unrar binaries in your $PATH to use those types of
+      archives.
  - Savefiles backup and automatic upload with rom.
  - cli
 
 
-__DEPENDENCIES__
+DEPENDENCIES
+------------
  - cmdln - http://pypi.python.org/pypi/cmdln/1.1.2
  - pyxml - http://pypi.python.org/pypi/PyXML/0.8.4
+
+
+CHANGES
+-------
+ 0.1.1
+   - Fixed an updatedb bug. It wouldn't try to update or recreate db-file if it
+     was deleted but xml file was still present.
+   - Added a warnings about invalid files on import.
+   - Objectflow revised.
+   - Database exception handling.

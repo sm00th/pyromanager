@@ -11,8 +11,6 @@ class cfg_test( unittest.TestCase ):
             '~/.pyromgr.rc' ) )
         self.assertEqual( config.db_file, os.path.expanduser(
             '~/.pyromgr/pyromgr.db' ) )
-        self.assertEqual( config.xml_file, os.path.expanduser(
-            '~/.pyromgr/advanscene.xml' ) )
         self.assertEqual( config.flashcart, os.path.expanduser(
             '/mnt/ds' ) )
         self.assertEqual( config.tmp_dir, os.path.expanduser(
@@ -29,18 +27,17 @@ class cfg_test( unittest.TestCase ):
             'there_is_no_way_this_is_in_your_path' ) )
 
     def test_regions( self ):
-        config = pyromanager.cfg.Config()
-        self.assertEqual( config.region_name( 0 ), 'EUR' )
-        self.assertEqual( config.region_name( 0, 0 ), 'Europe' )
-        self.assertEqual( config.region_name( 0, 1 ), 'EUR' )
-        self.assertEqual( config.region_name( 0, 2 ), 'E' )
-        self.assertEqual( config.region_name( 0, 9 ), 'EUR' )
-        self.assertEqual( config.region_name( 999 ), 'Unknown: 999' )
+        self.assertEqual( pyromanager.cfg.region_name( 0 ), 'EUR' )
+        self.assertEqual( pyromanager.cfg.region_name( 0, 0 ), 'Europe' )
+        self.assertEqual( pyromanager.cfg.region_name( 0, 1 ), 'EUR' )
+        self.assertEqual( pyromanager.cfg.region_name( 0, 2 ), 'E' )
+        self.assertEqual( pyromanager.cfg.region_name( 0, 9 ), 'EUR' )
+        self.assertEqual( pyromanager.cfg.region_name( 999 ), 'Unknown: 999' )
 
-        self.assertEqual( config.region_code( 'Japan' ), 7 )
-        self.assertEqual( config.region_code( 'JPN' ), 7 )
-        self.assertEqual( config.region_code( 'J' ), 7 )
-        self.assertEqual( config.region_code( 'Zimbabwe' ), None )
+        self.assertEqual( pyromanager.cfg.region_code( 'Japan' ), 7 )
+        self.assertEqual( pyromanager.cfg.region_code( 'JPN' ), 7 )
+        self.assertEqual( pyromanager.cfg.region_code( 'J' ), 7 )
+        self.assertEqual( pyromanager.cfg.region_code( 'Zimbabwe' ), None )
 
     def test_rc( self ):
         config = pyromanager.cfg.Config( 'tests/test.rc' )
@@ -48,8 +45,6 @@ class cfg_test( unittest.TestCase ):
         self.assertEqual( config.rc_file, 'tests/test.rc' )
         self.assertEqual( config.db_file, os.path.expanduser(
             '~/.pyromgr/sql.db' ) )
-        self.assertEqual( config.xml_file, os.path.expanduser(
-            '~/.pyromgr/adv.xml' ) )
         self.assertEqual( config.flashcart, '/home/someuser/flash' )
         self.assertEqual( config.tmp_dir, '/tmp' )
         self.assertEqual( config.saves_dir, os.path.expanduser(
@@ -62,14 +57,14 @@ class db_test( unittest.TestCase ):
         self.config = pyromanager.cfg.Config( 'tests/test.rc' )
         self.config._paths['assets_dir'] = 'tests'
         self.config.read_config()
-        self.db = pyromanager.db.SQLdb( self.config.db_file, self.config )
+        self.db = pyromanager.db.SQLdb( self.config.db_file )
 
     def tearDown( self ):
         del( self.db )
         os.unlink( self.config.db_file )
 
     def test_db( self ):
-        xmldb = pyromanager.db.AdvansceneXML( 'tests/nds.xml', self.config )
+        xmldb = pyromanager.db.AdvansceneXML( 'tests/nds.xml' )
         xmldb.parse()
         self.assertEqual( len( xmldb )    , 7 )
         self.assertTupleEqual( xmldb[0], (4710, u'Coropata', 3076538459L,
@@ -121,9 +116,9 @@ class rom_test( unittest.TestCase ):
         self.config = pyromanager.cfg.Config( 'tests/test.rc' )
         self.config._paths['assets_dir'] = 'tests'
         self.config.read_config()
-        self.db = pyromanager.db.SQLdb( self.config.db_file, self.config )
+        self.db = pyromanager.db.SQLdb( self.config.db_file )
 
-        xmldb = pyromanager.db.AdvansceneXML( 'tests/nds.xml', self.config )
+        xmldb = pyromanager.db.AdvansceneXML( 'tests/nds.xml' )
         xmldb.parse()
         self.db.import_known( xmldb )
 
@@ -132,12 +127,13 @@ class rom_test( unittest.TestCase ):
         os.unlink( self.config.db_file )
 
     def test_RomInfo( self ):
-        rominfo = pyromanager.rom.RomInfo( 4710, self.db, self.config )
+        rominfo = pyromanager.rom.RomInfo( self.db.rom_info( 4710 ) )
         self.assertEqual( rominfo.filename, '4710 - Coropata (JPN).nds' )
         self.assertEqual( rominfo.__str__(), '4710 - Coropata (JPN) [BAHAMUT]' )
 
     def test_FileInfo_file( self ):
-        finfo = pyromanager.rom.FileInfo( 'tests/TinyFB.nds', self.db, self.config )
+        finfo = pyromanager.rom.FileInfo( 'tests/TinyFB.nds',
+                self.config.tmp_dir )
         self.assertFalse( finfo.is_initialized() )
         finfo.init()
         self.assertTrue( finfo.is_initialized() )
@@ -148,17 +144,16 @@ class rom_test( unittest.TestCase ):
         self.assertEqual( finfo.size_mb, '0.00M' )
         self.assertEqual( finfo.crc, 516824321L )
 
-        rinf = finfo.get_rom_info()
-        self.assertIsInstance( rinf, pyromanager.rom.RomInfo )
-
         self.assertEqual( finfo.__str__(), "tinyfb (tests/TinyFB.nds)" )
 
     def test_FileInfo_invalid( self ):
-        finfo = pyromanager.rom.FileInfo( 'tests/fake.nds', self.db, self.config )
+        finfo = pyromanager.rom.FileInfo( 'tests/fake.nds',
+                self.config.tmp_dir )
         self.assertFalse( finfo.is_valid() )
 
     def test_FileInfo_archive( self ):
-        finfo = pyromanager.rom.FileInfo( 'tests/TinyFB.zip:TinyFB.nds', self.db, self.config )
+        finfo = pyromanager.rom.FileInfo( 'tests/TinyFB.zip:TinyFB.nds',
+                self.config.tmp_dir )
         self.assertFalse( finfo.is_initialized() )
         finfo.init()
         self.assertTrue( finfo.is_initialized() )
@@ -169,14 +164,13 @@ class rom_test( unittest.TestCase ):
     def test_FileInfo_lid( self ):
         self.db.add_local( ( 4999, '/some/path/to/file.nds', 'something',
             123187123, 9812312 ) )
-        finfo = pyromanager.rom.FileInfo( None, self.db, self.config, 1 )
+        finfo = pyromanager.rom.FileInfo( None, self.config.tmp_dir,
+                self.db.file_info( 1 ) )
         self.assertTrue( finfo.is_initialized() )
         self.assertEqual( finfo.normalized_name, 'file' )
         self.assertEqual( finfo.size, 123187123 )
         self.assertEqual( finfo.size_mb, '117.48M' )
         self.assertEqual( finfo.crc, 9812312 )
-        rinf = finfo.get_rom_info()
-        self.assertIsInstance( rinf, pyromanager.rom.RomInfo )
 
     def test_Rom( self ):
         romobj = pyromanager.rom.Rom( 'tests/TinyFB.nds', self.db, self.config )
@@ -218,10 +212,8 @@ class rom_test( unittest.TestCase ):
             "3776 - Broken Sword - Shadow of the Templars - The Director's Cut (USA) (En,Fr,De,Es,It).nds" : 
                 ( 3776, "broken sword shadow of templars directors cut", 1 ),
         }
-        config = pyromanager.cfg.Config( 'tests/test.rc' )
         for( fileName, expectedResult ) in testNames.iteritems():
-            self.assertTupleEqual( pyromanager.rom.parse_filename( fileName,
-                config ), expectedResult )
+            self.assertTupleEqual( pyromanager.rom.parse_filename( fileName ), expectedResult )
 
     def test_extension( self ):
         self.assertEqual( pyromanager.rom.extension( 'path/to/somefile.wTf' ),

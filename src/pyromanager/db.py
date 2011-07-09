@@ -9,7 +9,8 @@ class SQLdb():
     '''Interface for sqlite3 database'''
     def __init__( self, db_file = None ):
         mkdir( os.path.dirname( db_file ) )
-        self.database = sqlite3.connect( db_file )
+        # TODO: check reeeeeeeeeeeally carefully if this is safe thing to do.
+        self.database = sqlite3.connect( db_file, check_same_thread = False )
 
     def __del__( self ):
         self.database.close()

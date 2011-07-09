@@ -3,6 +3,20 @@ import os, re, zipfile, subprocess, shutil
 import struct, binascii, time
 import ui
 from cfg import region_name, region_code
+import threading, Queue
+
+class AddWorker( threading.Thread ):
+    '''Worker for adding roms to db'''
+    def __init__( self, queue ):
+        threading.Thread.__init__( self )
+        self.queue = queue
+
+    def run( self ):
+        '''Run thread'''
+        while True:
+            rom = self.queue.get()
+            rom.add_to_db()
+            self.queue.task_done()
 
 class RomInfo:
     '''Rom information from database'''
@@ -633,13 +647,19 @@ def search( path, config ):
 
 def import_path( path, opts, database, config ):
     '''Import roms from path'''
+    rom_queue = Queue.Queue()
+    adder = AddWorker( rom_queue )
+    adder.daemon = True
+    adder.start()
+
     for rom_path in search( path, config ):
         rom = Rom( rom_path, database, config )
         if ( opts and opts.full_rescan ) or not rom.is_in_db():
             if rom.is_valid():
-                rom.add_to_db()
+                rom_queue.put( rom )
             else:
                 print 'File is invalid: %s' % ui.colorize( rom_path, 31 )
+    rom_queue.join()
 
 def get_save( path, save_ext = 'sav' ):
     '''Search for savefile of given rom'''

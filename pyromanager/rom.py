@@ -414,9 +414,9 @@ class Nds:
 
             self.hardware['unit_code']  = byte_to_int( file_handler.read( 1 ) )
             self.hardware['encryption'] = byte_to_int( file_handler.read( 1 ) )
-            self.hardware['capacity']   = capsize(
-                byte_to_int( file_handler.read( 2 ) )
-            )
+            self.hardware['capacity']   = pow( 2,
+                20 + byte_to_int( file_handler.read( 2 ) )
+            ) / 8388608
 
             file_handler.seek( 0 )
             self.rom['crc32'] = binascii.crc32( file_handler.read() ) & \
@@ -617,11 +617,6 @@ def byte_to_int( byte_string ):
         byte_string +
         ( '\x00' * ( 4 - len( byte_string ) ) )
     )[0]
-
-# FIXME: make that a property of Nds
-def capsize( cap ):
-    '''Returns capacity size of original cartridge'''
-    return pow( 2, 20 + cap ) / 8388608
 
 def search( path, config ):
     '''Returns list of acceptable files'''

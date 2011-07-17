@@ -1,6 +1,15 @@
 '''User interface routines for pyromanager'''
 import cmdln, os
 import db, cfg, rom
+import logging
+
+logging.basicConfig( format="%(asctime)-15s %(levelname)-9s %(message)s" )
+log = logging.getLogger( 'pyromgr' )
+log.setLevel( logging.INFO )
+
+def verbose( self, opt, value, parser, *args, **kwargs ):
+    log.setLevel( logging.DEBUG )
+
 
 def colorize( msg, colorid = 0 ):
     '''Colorize string'''
@@ -73,6 +82,13 @@ class Cli( cmdln.Cmdln ):
             "--with-db",
             dest="db_file",
             help="use specified db-file"
+        )
+        parser.add_option(
+            "-v",
+            "--verbose",
+            action = "callback",
+            callback = verbose,
+            help="verbose logging"
         )
         return parser
 
@@ -175,9 +191,9 @@ class Cli( cmdln.Cmdln ):
         xml = db.AdvansceneXML()
         if xml.update( self.database, self.config.tmp_dir ) or opts.force:
             self.database.save()
-            print "Database updated"
+            log.info( "Database updated" )
         else:
-            print "Already up to date"
+            log.info( "Already up to date" )
 
     @cmdln.alias( "c", "cdb" )
     def do_cleandb( self, subcmd, opts ):
@@ -222,5 +238,5 @@ class Cli( cmdln.Cmdln ):
                     save = rom.SaveFile( relid, local_id, save_mtime, None,
                             self.config )
                     if not save.stored():
-                        print "Backing up", save_path, save
+                        log.info( "Backing up %s %s" % ( save_path, save ) )
                         save.copy_from( save_path )

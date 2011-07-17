@@ -1,6 +1,7 @@
 '''Provides classes related to roms'''
 import os, re, zipfile, subprocess, shutil
 import struct, binascii, time
+import logging
 import ui
 from cfg import region_name, region_code
 import threading, Queue
@@ -170,7 +171,8 @@ class FileInfo:
             else:
                 shutil.copy( self.path, '%s/%s' % ( path, filename ) )
         except( IOError, OSError ) as exc:
-            print '[ERROR] Upload failed: %s' % ( exc )
+            log = logging.getLogger( 'pyromgr' )
+            log.error( 'Upload failed: %s' % exc )
 
     def remove( self ):
         '''Delete file and remove from local table'''
@@ -423,7 +425,9 @@ class Nds:
 
             file_handler.close()
         except IOError as exc:
-            print 'Failed to read file %s: %s' % ( self.file_path, exc )
+            log = logging.getLogger( 'pyromgr' )
+            log.warning( 'Failed to read file %s: %s' % ( self.file_path, exc )
+                    )
 
     @property
     def crc( self ):
@@ -602,7 +606,8 @@ def byte_to_string( byte_string ):
     try:
         string = byte_string.decode( 'utf-8' ).rstrip( '\x00' )
     except UnicodeDecodeError as exc:
-        print 'Failed to decode string: %s' % ( exc )
+        log = logging.getLogger( 'pyromgr' )
+        log.warning( 'Failed to decode string: %s' % ( exc ) )
     return string
 
 def byte_to_int( byte_string ):
@@ -621,6 +626,7 @@ def capsize( cap ):
 def search( path, config ):
     '''Returns list of acceptable files'''
     result = []
+    log = logging.getLogger( 'pyromgr' )
     try:
         path = os.path.abspath( path )
         for file_name in os.listdir( path ):
@@ -639,10 +645,10 @@ def search( path, config ):
                             for arc_path in archive.full_paths():
                                 result.append( arc_path )
                         except zipfile.BadZipfile as exc:
-                            print "Failed to scan archive %s: %s" % (
-                                    file_path, exc )
+                            log.warning( "Failed to scan archive %s: %s" % (
+                                    file_path, exc ) )
     except OSError as exc:
-        print "Can't scan path %s: %s" % ( path, exc )
+        log.error( "Can't scan path %s: %s" % ( path, exc ) )
     return result
 
 def import_path( path, opts, database, config ):
@@ -652,13 +658,14 @@ def import_path( path, opts, database, config ):
     adder.daemon = True
     adder.start()
 
+    log = logging.getLogger( 'pyromgr' )
     for rom_path in search( path, config ):
         rom = Rom( rom_path, database, config )
         if ( opts and opts.full_rescan ) or not rom.is_in_db():
             if rom.is_valid():
                 rom_queue.put( rom )
             else:
-                print 'File is invalid: %s' % ui.colorize( rom_path, 31 )
+                log.warning( 'File is invalid: %s' % ui.colorize( rom_path, 31 ) )
     rom_queue.join()
 
 def get_save( path, save_ext = 'sav' ):

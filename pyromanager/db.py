@@ -2,6 +2,7 @@
 import re, os, time
 import urllib2
 import sqlite3
+import logging
 from rom import mkdir, strip_name, Zip
 from xml.dom import minidom
 
@@ -296,7 +297,8 @@ class AdvansceneXML():
                 os.unlink( tmp_db )
                 os.unlink( zip_path )
         except urllib2.URLError as exc:
-            print "Unable to download xml: %s" % ( exc )
+            log = logging.getLogger( 'pyromgr' )
+            log.error( 'Unable to download xml: %s' % exc )
             exit( 2 )
 
         return updated

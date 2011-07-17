@@ -20,11 +20,11 @@ setup( name          = "pyromanager",
             'pyromanager.cfg',
         ],
         package_dir  = {
-            'pyromanager' : 'src/pyromanager'
+            'pyromanager' : 'pyromanager'
         },
 
         scripts      = [
-            'src/pyromgr',
+            'pyromgr',
         ],
 
         classifiers  = [

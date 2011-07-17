@@ -660,7 +660,7 @@ def import_path( path, opts, database, config ):
             if rom.is_valid():
                 rom_queue.put( rom )
             else:
-                log.warning( 'File is invalid: %s' % ui.colorize( rom_path, 31 ) )
+                log.warning( 'File is invalid: %s' % rom_path )
     rom_queue.join()
 
 def get_save( path, save_ext = 'sav' ):

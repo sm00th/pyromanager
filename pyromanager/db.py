@@ -256,6 +256,10 @@ class SQLdb():
                     result = True
         except sqlite3.OperationalError:
             self._create_tables()
+        except sqlite3.InterfaceError as exc:
+            log = logging.getLogger( 'pyromgr' )
+            log.error( 'Failed to check if %s is in db: %s' % ( path, exc ) )
+
         cursor.close()
         return result
 

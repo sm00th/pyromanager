@@ -1,7 +1,0 @@
-#!/usr/bin/python2
-import sys
-from pyromanager import ui
-
-if __name__ == '__main__':
-    __cli__ = ui.Cli()
-    sys.exit( __cli__.main() )

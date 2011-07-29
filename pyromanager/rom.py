@@ -1,8 +1,22 @@
 '''Provides classes related to roms'''
 import os, re, zipfile, subprocess, shutil
 import struct, binascii, time
-import ui
+import logging
 from cfg import region_name, region_code
+import threading, Queue
+
+class AddWorker( threading.Thread ):
+    '''Worker for adding roms to db'''
+    def __init__( self, queue ):
+        threading.Thread.__init__( self )
+        self.queue = queue
+
+    def run( self ):
+        '''Run thread'''
+        while True:
+            rom = self.queue.get()
+            rom.add_to_db()
+            self.queue.task_done()
 
 class RomInfo:
     '''Rom information from database'''
@@ -156,7 +170,8 @@ class FileInfo:
             else:
                 shutil.copy( self.path, '%s/%s' % ( path, filename ) )
         except( IOError, OSError ) as exc:
-            print '[ERROR] Upload failed: %s' % ( exc )
+            log = logging.getLogger( 'pyromgr' )
+            log.error( 'Upload failed: %s' % exc )
 
     def remove( self ):
         '''Delete file and remove from local table'''
@@ -169,12 +184,13 @@ class FileInfo:
 class Rom:
     '''internal representation of roms'''
 
-    def __init__( self, path, database, config,
+    def __init__( self, path, database, config, ui_handler = None,
             rom_info = None, file_info = None ):
-        self.database  = database
-        self.config    = config
-        self.rom_info  = rom_info
-        self.file_info = file_info
+        self.database   = database
+        self.config     = config
+        self.ui_handler = ui_handler
+        self.rom_info   = rom_info
+        self.file_info  = file_info
 
         if not self.file_info:
             self.file_info = FileInfo( os.path.abspath( path ),
@@ -208,29 +224,29 @@ class Rom:
         result = None
         if type( relid ) == int:
             rom_obj = RomInfo( self.database.rom_info( relid ) )
-            print "%s\nIdentified as %s" % (
-                    ui.colorize( os.path.basename( self.file_info.path ), 31 ),
+            premsg = "*%s*\nIdentified as %s" % (
+                    os.path.basename( self.file_info.path ),
                     rom_obj
             )
-            result = ui.question_yn( "Is this correct?" )
+            result = self.ui_handler.question_yn( premsg, "Is this correct?" )
         elif type( relid ) == list:
-            pre_msg = "%s\nCan be one of the following:" % (
-                    ui.colorize( os.path.basename( self.file_info.path ), 31 ) )
+            pre_msg = "*%s*\nCan be one of the following:" % (
+                    os.path.basename( self.file_info.path ) )
             rom_list = [ RomInfo( self.database.rom_info( release_id ) ) for
                 release_id in relid ]
-            result = ui.list_question( pre_msg, rom_list, "Which one?" )
-        print
+            result = self.ui_handler.list_question( pre_msg, rom_list,
+                    "Which one?" )
 
         return result
 
     def _ask_name( self ):
         '''Ask user for rom name'''
         search_name = None
-        print "Wasn't able to automatically identify\n%s" % ( ui.colorize(
-            self.file_info.path, 31 ) )
-        if ui.question_yn( "Want to manually search by name?" ):
-            print "Enter name: ",
-            search_name = raw_input().lower()
+        premsg = "Wasn't able to automatically identify\n*%s*" % (
+                self.file_info.path )
+        if self.ui_handler.question_yn( premsg,
+                "Want to manually search by name?" ):
+            search_name = self.ui_handler.get_string( "Enter name" )
         return search_name
 
     def _name_search( self, relid_list ):
@@ -398,9 +414,9 @@ class Nds:
 
             self.hardware['unit_code']  = byte_to_int( file_handler.read( 1 ) )
             self.hardware['encryption'] = byte_to_int( file_handler.read( 1 ) )
-            self.hardware['capacity']   = capsize(
-                byte_to_int( file_handler.read( 2 ) )
-            )
+            self.hardware['capacity']   = pow( 2,
+                20 + byte_to_int( file_handler.read( 2 ) )
+            ) / 8388608
 
             file_handler.seek( 0 )
             self.rom['crc32'] = binascii.crc32( file_handler.read() ) & \
@@ -409,7 +425,9 @@ class Nds:
 
             file_handler.close()
         except IOError as exc:
-            print 'Failed to read file %s: %s' % ( self.file_path, exc )
+            log = logging.getLogger( 'pyromgr' )
+            log.warning( 'Failed to read file %s: %s' % ( self.file_path, exc )
+                    )
 
     @property
     def crc( self ):
@@ -588,7 +606,8 @@ def byte_to_string( byte_string ):
     try:
         string = byte_string.decode( 'utf-8' ).rstrip( '\x00' )
     except UnicodeDecodeError as exc:
-        print 'Failed to decode string: %s' % ( exc )
+        log = logging.getLogger( 'pyromgr' )
+        log.warning( 'Failed to decode string: %s' % ( exc ) )
     return string
 
 def byte_to_int( byte_string ):
@@ -599,14 +618,10 @@ def byte_to_int( byte_string ):
         ( '\x00' * ( 4 - len( byte_string ) ) )
     )[0]
 
-# FIXME: make that a property of Nds
-def capsize( cap ):
-    '''Returns capacity size of original cartridge'''
-    return pow( 2, 20 + cap ) / 8388608
-
 def search( path, config ):
     '''Returns list of acceptable files'''
     result = []
+    log = logging.getLogger( 'pyromgr' )
     try:
         path = os.path.abspath( path )
         for file_name in os.listdir( path ):
@@ -625,21 +640,28 @@ def search( path, config ):
                             for arc_path in archive.full_paths():
                                 result.append( arc_path )
                         except zipfile.BadZipfile as exc:
-                            print "Failed to scan archive %s: %s" % (
-                                    file_path, exc )
+                            log.warning( "Failed to scan archive %s: %s" % (
+                                    file_path, exc ) )
     except OSError as exc:
-        print "Can't scan path %s: %s" % ( path, exc )
+        log.error( "Can't scan path %s: %s" % ( path, exc ) )
     return result
 
-def import_path( path, opts, database, config ):
+def import_path( path, opts, database, config, ui_handler ):
     '''Import roms from path'''
+    rom_queue = Queue.Queue()
+    adder = AddWorker( rom_queue )
+    adder.daemon = True
+    adder.start()
+
+    log = logging.getLogger( 'pyromgr' )
     for rom_path in search( path, config ):
-        rom = Rom( rom_path, database, config )
+        rom = Rom( rom_path, database, config, ui_handler )
         if ( opts and opts.full_rescan ) or not rom.is_in_db():
             if rom.is_valid():
-                rom.add_to_db()
+                rom_queue.put( rom )
             else:
-                print 'File is invalid: %s' % ui.colorize( rom_path, 31 )
+                log.warning( 'File is invalid: %s' % rom_path )
+    rom_queue.join()
 
 def get_save( path, save_ext = 'sav' ):
     '''Search for savefile of given rom'''

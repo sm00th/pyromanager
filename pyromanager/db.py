@@ -2,6 +2,7 @@
 import re, os, time
 import urllib2
 import sqlite3
+import logging
 from rom import mkdir, strip_name, Zip
 from xml.dom import minidom
 
@@ -9,7 +10,8 @@ class SQLdb():
     '''Interface for sqlite3 database'''
     def __init__( self, db_file = None ):
         mkdir( os.path.dirname( db_file ) )
-        self.database = sqlite3.connect( db_file )
+        # TODO: check reeeeeeeeeeeally carefully if this is safe thing to do.
+        self.database = sqlite3.connect( db_file, check_same_thread = False )
 
     def __del__( self ):
         self.database.close()
@@ -254,6 +256,11 @@ class SQLdb():
                     result = True
         except sqlite3.OperationalError:
             self._create_tables()
+        except sqlite3.InterfaceError as exc:
+            log = logging.getLogger( 'pyromgr' )
+            log.error( 'Failed to check if %s (%s) is in db: %s' % ( path,
+                type( path ), exc ) )
+
         cursor.close()
         return result
 
@@ -295,7 +302,8 @@ class AdvansceneXML():
                 os.unlink( tmp_db )
                 os.unlink( zip_path )
         except urllib2.URLError as exc:
-            print "Unable to download xml: %s" % ( exc )
+            log = logging.getLogger( 'pyromgr' )
+            log.error( 'Unable to download xml: %s' % exc )
             exit( 2 )
 
         return updated

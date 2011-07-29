@@ -3,7 +3,7 @@
 from distutils.core import setup
 
 setup( name          = "pyromanager",
-        version      = "0.1.1",
+        version      = "0.1.2",
         description  = 'nds rom manager',
         author       = 'Artem Savkov',
         author_email = 'artem.savkov@gmail.com',

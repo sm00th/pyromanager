@@ -17,7 +17,6 @@ Some of the current features:
 DEPENDENCIES
 ------------
  - cmdln - http://pypi.python.org/pypi/cmdln/1.1.2
- - pyxml - http://pypi.python.org/pypi/PyXML/0.8.4
 
 
 CHANGES

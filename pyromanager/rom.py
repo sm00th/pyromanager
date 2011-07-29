@@ -2,7 +2,6 @@
 import os, re, zipfile, subprocess, shutil
 import struct, binascii, time
 import logging
-import ui
 from cfg import region_name, region_code
 import threading, Queue
 
@@ -185,12 +184,13 @@ class FileInfo:
 class Rom:
     '''internal representation of roms'''
 
-    def __init__( self, path, database, config,
+    def __init__( self, path, database, config, ui_handler = None,
             rom_info = None, file_info = None ):
-        self.database  = database
-        self.config    = config
-        self.rom_info  = rom_info
-        self.file_info = file_info
+        self.database   = database
+        self.config     = config
+        self.ui_handler = ui_handler
+        self.rom_info   = rom_info
+        self.file_info  = file_info
 
         if not self.file_info:
             self.file_info = FileInfo( os.path.abspath( path ),
@@ -224,29 +224,29 @@ class Rom:
         result = None
         if type( relid ) == int:
             rom_obj = RomInfo( self.database.rom_info( relid ) )
-            print "%s\nIdentified as %s" % (
-                    ui.colorize( os.path.basename( self.file_info.path ), 31 ),
+            premsg = "*%s*\nIdentified as %s" % (
+                    os.path.basename( self.file_info.path ),
                     rom_obj
             )
-            result = ui.question_yn( "Is this correct?" )
+            result = self.ui_handler.question_yn( premsg, "Is this correct?" )
         elif type( relid ) == list:
-            pre_msg = "%s\nCan be one of the following:" % (
-                    ui.colorize( os.path.basename( self.file_info.path ), 31 ) )
+            pre_msg = "*%s*\nCan be one of the following:" % (
+                    os.path.basename( self.file_info.path ) )
             rom_list = [ RomInfo( self.database.rom_info( release_id ) ) for
                 release_id in relid ]
-            result = ui.list_question( pre_msg, rom_list, "Which one?" )
-        print
+            result = self.ui_handler.list_question( pre_msg, rom_list,
+                    "Which one?" )
 
         return result
 
     def _ask_name( self ):
         '''Ask user for rom name'''
         search_name = None
-        print "Wasn't able to automatically identify\n%s" % ( ui.colorize(
-            self.file_info.path, 31 ) )
-        if ui.question_yn( "Want to manually search by name?" ):
-            print "Enter name: ",
-            search_name = raw_input().lower()
+        premsg = "Wasn't able to automatically identify\n*%s*" % (
+                self.file_info.path )
+        if self.ui_handler.question_yn( premsg,
+                "Want to manually search by name?" ):
+            search_name = self.ui_handler.get_string( "Enter name" )
         return search_name
 
     def _name_search( self, relid_list ):

@@ -22,9 +22,14 @@ DEPENDENCIES
 
 CHANGES
 -------
+ 0.1.2
+   - Userquestioning now is done in separate thread, so scanning feels faster.
+   - Better logging.
+   - User questioning refactored for easier transition to other possible interfaces.
+
  0.1.1
    - Fixed an updatedb bug. It wouldn't try to update or recreate db-file if it
      was deleted but xml file was still present.
-   - Added a warnings about invalid files on import.
+   - Added warnings about invalid files on import.
    - Objectflow revised.
    - Database exception handling.

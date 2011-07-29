@@ -1,5 +1,5 @@
 '''User interface routines for pyromanager'''
-import cmdln, os
+import cmdln, os, re
 import db, cfg, rom
 import logging
 
@@ -13,7 +13,7 @@ def verbose( self, opt, value, parser, *args, **kwargs ):
 
 def colorize( msg, colorid = 0 ):
     '''Colorize string'''
-    return "\x1b[%im%s\x1b[39;49;00m" % ( colorid, msg )
+    return "\x1b[%i;01m%s\x1b[39;49;00m" % ( colorid, msg )
 
 class Cli( cmdln.Cmdln ):
     def __init__( self, *args ):
@@ -53,7 +53,7 @@ class Cli( cmdln.Cmdln ):
         ${cmd_option_list}
         """
 
-        rom.import_path( path, opts, self.database, self.config )
+        rom.import_path( path, opts, self.database, self.config, self )
 
     @cmdln.alias( "l", "ls" )
     @cmdln.option( "-k", "--known", action = "store_true",
@@ -115,7 +115,7 @@ class Cli( cmdln.Cmdln ):
                     self.database.search_crc( crc, table = 'local' )
             )
 
-            pre_msg = "%d duplicates found for %s\n" % ( entries,
+            pre_msg = "%d duplicates found for *%s*\n" % ( entries,
                     rom_list[0] ) + "Delete all but one(None - let all be)"
             answer = self.list_question( pre_msg, rom_list, "Which one?" )
             if answer != None:
@@ -199,13 +199,13 @@ class Cli( cmdln.Cmdln ):
     def list_question( self, pre_msg, choice_list, msg, default = None ):
         '''Qustion with multiple choices'''
         if pre_msg:
-            print "%s" % pre_msg
+            print "%s" % self.highlight( pre_msg )
         index = 0
         for choice in choice_list:
-            print_index = "%3d." % index
+            print_index = "%3d" % index
             if self.color:
                 print_index = colorize( print_index, 32 )
-            print " %s %s" % ( print_index, choice )
+            print " %s. %s" % ( print_index, choice )
             index += 1
 
         index_list = range( index ) + [ None ]
@@ -236,7 +236,7 @@ class Cli( cmdln.Cmdln ):
     def question_yn( self, pre_msg, msg, default="y" ):
         '''Yes/No question'''
         if pre_msg:
-            print "%s" % pre_msg
+            print "%s" % self.highlight( pre_msg )
         choices = {
             'y' : [ 'y', True ],
             'n' : [ 'n', False ],

@@ -646,7 +646,7 @@ def search( path, config ):
         log.error( "Can't scan path %s: %s" % ( path, exc ) )
     return result
 
-def import_path( path, opts, database, config ):
+def import_path( path, opts, database, config, ui_handler ):
     '''Import roms from path'''
     rom_queue = Queue.Queue()
     adder = AddWorker( rom_queue )
@@ -655,7 +655,7 @@ def import_path( path, opts, database, config ):
 
     log = logging.getLogger( 'pyromgr' )
     for rom_path in search( path, config ):
-        rom = Rom( rom_path, database, config )
+        rom = Rom( rom_path, database, config, ui_handler )
         if ( opts and opts.full_rescan ) or not rom.is_in_db():
             if rom.is_valid():
                 rom_queue.put( rom )

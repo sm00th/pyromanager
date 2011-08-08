@@ -36,6 +36,5 @@ setup( name          = "pyromanager",
 
         requires = [
             'cmdln',
-            'pyxml',
         ],
     )

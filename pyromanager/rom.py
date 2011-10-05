@@ -398,7 +398,10 @@ class Nds:
     def is_valid( self ):
         '''Checks validity of rom'''
         valid = 1
-        if self.hardware['capacity'] > 4096:
+        try:
+            if self.hardware['capacity'] > 4096:
+                valid = 0
+        except KeyError:
             valid = 0
         return valid
 
@@ -468,7 +471,12 @@ class Archive:
         tmp_file = '%s/%s' % ( self.tmp_dir, nds_name )
         nds = Nds( tmp_file )
         nds.parse()
-        os.unlink( tmp_file )
+        try:
+            os.unlink( tmp_file )
+        except OSError as exc:
+            log = logging.getLogger( 'pyromgr' )
+            log.warning( 'Failed to remove tmpfile: %s' % ( exc ) )
+
         return nds
 
 class Zip( Archive ):

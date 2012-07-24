@@ -92,7 +92,7 @@ class Cli( cmdln.Cmdln ):
         )
         answer = self.list_question( "Possible roms:", rom_list, "Which one?" )
         if answer != None:
-            rom_list[answer].upload( path )
+            rom_list[answer].upload( path, self.config.trim )
             save_list = rom_list[answer].get_saves()
             if save_list:
                 answer = self.list_question( "Savefiles found for this rom:",

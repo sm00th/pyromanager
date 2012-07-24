@@ -58,14 +58,17 @@ class Config:
     def __init__( self, rc_file = DEFAULT_RC ):
         self.rc_file = os.path.expanduser( rc_file )
         self._paths  = {
-                'assets_dir'  : os.path.expanduser( "~/.pyromgr" ),
-                'saves_dir' : 'saves',
-                'db_file'   : 'pyromgr.db',
-                'tmp_dir'   : '/tmp',
-                'flashcart' : '/mnt/ds',
+                'assets_dir' : os.path.expanduser( "~/.pyromgr" ),
+                'saves_dir'  : 'saves',
+                'db_file'    : 'pyromgr.db',
+                'tmp_dir'    : '/tmp',
+                'flashcart'  : '/mnt/ds',
         }
         self._saves = {
                 'extension' : 'sav'
+        }
+        self._rom = {
+                'trim' : 'true'
         }
         self._extensions = None
 
@@ -80,6 +83,10 @@ class Config:
         parser.add_section( 'saves' )
         for ( save_opt, save_val ) in self._saves.iteritems():
             parser.set( 'saves', save_opt, save_val )
+
+        parser.add_section( 'rom' )
+        for ( rom_opt, rom_val ) in self._rom.iteritems():
+            parser.set( 'rom', rom_opt, rom_val )
 
         parser.write( file( self.rc_file, 'w' ) )
 
@@ -99,6 +106,9 @@ class Config:
         if parser.has_section( 'saves' ):
             for save_opt in self._saves.keys():
                 self._saves[save_opt] = parser.get( 'saves', save_opt )
+        if parser.has_section( 'rom' ):
+            for rom_opt in self._rom.keys():
+                self._rom[rom_opt] = parser.get( 'rom', rom_opt )
 
     @property
     def assets_dir( self ):
@@ -130,6 +140,11 @@ class Config:
     def save_ext( self ):
         '''Savefile extension'''
         return self._saves['extension']
+
+    @property
+    def trim( self ):
+        '''Savefile extension'''
+        return self._rom['trim']
 
     @property
     def extensions( self ):

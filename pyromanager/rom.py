@@ -155,20 +155,69 @@ class FileInfo:
             result = self.db_info['crc']
         return result
 
-    def upload( self, path, filename = None ):
+    def trim_to( self, dest_path, source_path = None ):
+        log = logging.getLogger( 'pyromgr' )
+        if not source_path:
+            source_path = self.path
+
+        source_fh = open( source_path, 'rb' )
+
+        source_fh.seek( -1, 2 )
+        tmp = byte_to_int( source_fh.read( 1 ) )
+        if tmp != 0x00 and tmp != 0xff:
+            log.debug( "Last byte of file is significant, not trimming" )
+            return False
+
+        source_fh.seek( 8 * 16 )
+        aeo = byte_to_int( source_fh.read( 4 ) )
+        source_fh.seek( aeo )
+
+        tmp = byte_to_int( source_fh.read( 1 ) )
+        if tmp != 0x00 and tmp != 0xff:
+            log.info( 'Rom "%s" does not end at AEO, checking if WiFi enabled' %
+                    source_path )
+            aeo += 136
+            source_fh.seek( aeo )
+            tmp = byte_to_int( source_fh.read( 1 ) )
+            if tmp != 0x00 and tmp != 0xff:
+                log.warn( 'Failed to trim "%s"' % source_path )
+                source_fh.close()
+                return False
+
+        log.debug( '%s AEO: 0x%x' % ( source_path, aeo ) )
+        source_fh.seek( 0 )
+        dest_fh = open( dest_path, 'wb' )
+        dest_fh.write( source_fh.read( aeo ) )
+        dest_fh.close()
+        source_fh.close()
+        return True
+
+    def upload( self, path, filename = None, trim = 'false' ):
         '''Copy rom to flashcart'''
         if not filename:
             filename = re.sub( r"^.*(/|:)", '', self.path )
 
+        dest_filename = '%s/%s' % ( path, filename )
         try:
+            trim_success = False
             if self.is_archived():
                 ( archive_path, nds_name ) = self._split_path()
                 archive = archive_obj( archive_path, self.tmp_dir )
-                archive.extract( nds_name, path )
-                os.rename( '%s/%s' % ( path, nds_name ),
-                        '%s/%s' % ( path, filename ) )
+                if trim == 'true':
+                    archive.extract( nds_name, self.tmp_dir )
+                    trim_success = self.trim_to( dest_filename, '%s/%s' % (
+                        self.tmp_dir, nds_name ) )
+                    os.unlink( '%s/%s' % ( self.tmp_dir, nds_name ) )
+
+                if not trim_success:
+                    archive.extract( nds_name, path )
+                    os.rename( '%s/%s' % ( path, nds_name ),
+                            dest_filename )
             else:
-                shutil.copy( self.path, '%s/%s' % ( path, filename ) )
+                if trim == 'true':
+                    trim_success = self.trim_to( dest_filename )
+                if not trim_success:
+                    shutil.copy( self.path, dest_filename )
         except( IOError, OSError ) as exc:
             log = logging.getLogger( 'pyromgr' )
             log.error( 'Upload failed: %s' % exc )
@@ -322,9 +371,9 @@ class Rom:
         self.database.remove_local( re.sub( r":.*$", '', self.file_info.path ) )
         self.file_info.remove()
 
-    def upload( self, path ):
+    def upload( self, path, trim ):
         '''Copy rom to flashcart'''
-        self.file_info.upload( path, self.rom_info.filename )
+        self.file_info.upload( path, self.rom_info.filename, trim )
 
     def get_saves( self ):
         '''Check if rom has any backed up saves'''
@@ -383,7 +432,11 @@ class SaveFile:
 
     def upload( self, path ):
         '''Upload savefile to specified path'''
-        shutil.copy( self.local_name, '%s/%s' % ( path, self.remote_name ) )
+        try:
+            shutil.copy( self.local_name, '%s/%s' % ( path, self.remote_name ) )
+        except( IOError, OSError ) as exc:
+            log = logging.getLogger( 'pyromgr' )
+            log.error( 'Upload failed: %s' % exc )
 
     def __str__( self ):
         return time.strftime( "%x %X", time.localtime( self.mtime ) )
@@ -429,8 +482,7 @@ class Nds:
             file_handler.close()
         except IOError as exc:
             log = logging.getLogger( 'pyromgr' )
-            log.warning( 'Failed to read file %s: %s' % ( self.file_path, exc )
-                    )
+            log.warning( 'Failed to read file %s: %s' % ( self.file_path, exc ) )
 
     @property
     def crc( self ):
